@@ -1,0 +1,23 @@
+# Configuración local y credenciales
+php.ini
+.env
+*.local.php
+*credenciales*
+*secret*
+
+# Datos generados en tiempo de ejecución (persistencia JSON)
+PHP/data/
+PHP/data/*.tmp.*
+
+# Logs
+*.log
+server.err
+GeoTec.js.bak
+datos.json.bak
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Documentación local de uso (no subir a GitHub)
+uso.md

@@ -1,0 +1,691 @@
+/* Estilos generales */
+body {
+    margin: 0;
+    padding: 0;
+}
+
+html, body, #map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilo para el círculo blanco con el ID */
+.label-edificio {
+    background-color: white;
+    border: 1px solid #666;
+    border-radius: 50%;
+    color: black;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    text-align: center;
+    line-height: 20px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Estilo del Popup general */
+.popup-tec {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    width: 260px;
+}
+
+.popup-tec h3 {
+    margin: 0 0 5px 0;
+    color: #1b3a57;
+    font-size: 16px;
+    border-bottom: 2px solid #d1d1d1;
+    padding-bottom: 5px;
+}
+
+.popup-tec p {
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+/* Carrusel CSS puro */
+.carousel-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc transparent;
+}
+
+.carousel-container img {
+    flex: 0 0 100%;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    object-position: center;
+    scroll-snap-align: start;
+    display: block;
+}
+
+/* Estilo de las Aulas (Badges) */
+.aulas-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.badge-aula {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    border: 1px solid #bbdefb;
+}
+
+/* BARRA DE BÚSQUEDA */
+.searchbar-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 500px;
+}
+
+/* En desktop, mover arriba */
+@media (min-width: 768px) {
+    .searchbar-container {
+        top: 20px;
+        bottom: auto;
+    }
+}
+
+.searchbar-input-wrapper {
+    position: relative;
+    background: white;
+    border-radius: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+}
+
+.searchbar-input {
+    flex: 1;
+    border: none;
+    padding: 12px 20px;
+    font-size: 14px;
+    border-radius: 25px;
+    outline: none;
+}
+
+.searchbar-button {
+    background: #1b3a57;
+    border: none;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 0 25px 25px 0;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.searchbar-button:hover {
+    background: #2d5a7f;
+}
+
+/* SUGERENCIAS */
+.searchbar-suggestions {
+    position: absolute;
+    bottom: calc(100% + 5px); /* En móvil, mostrar ARRIBA de la barra */
+    left: 0;
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+}
+
+.searchbar-suggestions.active {
+    display: block;
+}
+
+/* En desktop, mostrar ABAJO de la barra */
+@media (min-width: 768px) {
+    .searchbar-suggestions {
+        bottom: auto;
+        top: calc(100% + 5px);
+    }
+}
+
+.suggestion-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.2s;
+}
+
+.suggestion-item:hover {
+    background: #f5f5f5;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-edificio {
+    font-weight: bold;
+    color: #1b3a57;
+    font-size: 13px;
+    margin-bottom: 3px;
+}
+
+.suggestion-aula {
+    font-size: 12px;
+    color: #666;
+    padding-left: 15px;
+}
+
+.highlight {
+    background-color: #ffeb3b;
+    font-weight: bold;
+}
+
+/* Tooltip personalizado */
+.mi-tooltip-estilo {
+    background-color: rgba(27, 58, 87, 0.9);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    padding: 5px 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Controles de ubicación */
+.location-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.location-button {
+    background-color: white;
+    border: 2px solid #333;
+    border-radius: 6px;
+    color: #333;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.location-button:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.location-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* PANEL DE PUERTAS DE ACCESO (Esquina inferior izquierda) */
+.doors-panel-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    padding: 12px;
+    width: 220px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.doors-panel-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 800;
+    color: #1b3a57;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.doors-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid #d1d1d1;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333;
+    background-color: white;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.doors-select:hover {
+    border-color: #1b3a57;
+    box-shadow: 0 0 4px rgba(27, 58, 87, 0.2);
+}
+
+.doors-select:focus {
+    border-color: #1565c0;
+}
+
+/* En móviles, para evitar colisiones con la barra de búsqueda que está en bottom */
+@media (max-width: 768px) {
+    .doors-panel-container {
+        bottom: 85px; /* Sube para quedar por encima de la barra */
+        left: 5%;
+        width: 90%;
+        box-sizing: border-box;
+    }
+}
+
+/* BOTÓN "CÓMO LLEGAR" EN POPUP */
+.como-llegar-btn {
+    width: 100%;
+    background: #1b3a57;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: all 0.2s ease;
+}
+
+.como-llegar-btn:hover {
+    background: #2d5a7f;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+    transform: translateY(-1px);
+}
+
+.como-llegar-btn:active {
+    transform: translateY(0);
+}
+
+/* PANEL FLOTANTE DE INFORMACIÓN DE NAVEGACIÓN ACTIVA */
+.navigation-info-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(27, 58, 87, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    border-radius: 14px;
+    padding: 16px;
+    width: 280px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transform: translateY(150%);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.navigation-info-panel.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.nav-info-header {
+    font-size: 14px;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    color: #ffeb3b;
+}
+
+.nav-info-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.nav-info-item {
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.nav-info-item strong {
+    color: #ccc;
+}
+
+.nav-info-item span {
+    font-weight: 500;
+    text-align: right;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-dist {
+    font-size: 14px;
+    color: #4CAF50;
+    font-weight: bold !important;
+}
+
+#clear-route-btn {
+    width: 100%;
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+#clear-route-btn:hover {
+    background: #d32f2f;
+}
+
+/* En móviles, mostrar el panel arriba */
+@media (max-width: 768px) {
+    .navigation-info-panel {
+        top: 20px;
+        bottom: auto;
+        left: 5%;
+        right: auto;
+        width: 90%;
+        box-sizing: border-box;
+        transform: translateY(-150%);
+    }
+    .navigation-info-panel.active {
+        transform: translateY(0);
+    }
+}
+
+/* ANIMACIÓN PARA LA RUTA */
+@keyframes routeFlow {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+
+.animated-route-line {
+    animation: routeFlow 1.2s linear infinite;
+}
+
+/* MARCADORES PERSONALIZADOS */
+.beacon-marker div {
+    animation: pulseBeacon 2s infinite;
+}
+
+@keyframes pulseBeacon {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 0, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(0, 0, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 0, 255, 0);
+    }
+}
+
+.route-point-start div {
+    animation: pulseStart 2.5s infinite;
+}
+
+@keyframes pulseStart {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* ==========================================
+   BOTÓN DE ACCESO ADMINISTRATIVO / SUGERENCIAS
+   ========================================== */
+#admin-access-btn {
+    background-color: #1b3a57;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    line-height: 1;
+}
+
+#admin-access-btn:hover {
+    background-color: #2d5a7f;
+}
+
+#admin-access-btn:active {
+    transform: translateY(1px);
+}
+
+/* ==========================================
+   MODAL DE SUGERENCIAS
+   ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    margin: auto;
+    padding: 24px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    animation: modalFade 0.3s ease;
+}
+
+@keyframes modalFade {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.close-btn {
+    position: absolute;
+    right: 14px;
+    top: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    border: none;
+    background: none;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: #1b3a57;
+}
+
+.modal-content h2 {
+    color: #1b3a57;
+    margin: 0 0 16px 0;
+    font-size: 20px;
+}
+
+.modal-content label {
+    display: block;
+    margin: 14px 0 6px;
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+}
+
+.modal-content input,
+.modal-content textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    outline: none;
+    border-color: #1b3a57;
+}
+
+.modal-content textarea {
+    height: 110px;
+    resize: vertical;
+}
+
+.form-message {
+    margin: 12px 0;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    display: none;
+}
+
+.form-message.show {
+    display: block;
+}
+
+.form-message.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.form-message.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.submit-btn,
+.cancel-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.submit-btn {
+    background-color: #1b3a57;
+    color: white;
+}
+
+.submit-btn:hover {
+    background-color: #2d5a7f;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.cancel-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.form-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.form-container form {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.form-container form label {
+    margin-bottom: 4px;
+}
+
+.form-container form input,
+.form-container form textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-btn {
+    background-color: transparent;
+    color: #1b3a57;
+    border: 2px solid #1b3a57;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+.login-btn:hover {
+    background-color: #1b3a57;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 94%;
+        margin: 40px auto;
+        padding: 18px;
+    }
+}
