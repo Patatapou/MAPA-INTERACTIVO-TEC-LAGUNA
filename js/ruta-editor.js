@@ -14,13 +14,27 @@
     var urls = cfg.urls || {};
     var datos = cfg.datos || {};
     var config = cfg.config || {};
-    var tolerancia = Number(config.tolerancia_continuidad_m) || 0.5;
+    var tolerancia = Number(config.tolerancia_continuidad_m) || 2.5;
+
+    // Estilos de la red: azul marino oscuro con contorno claro para que los
+    // caminos se distingan sobre la imagen satelital.
+    var ESTILOS_RED = {
+        base: { color: '#12306b', weight: 5, opacity: 0.9 },
+        contiguo: { color: '#0b57d0', weight: 6, opacity: 1 },
+        noContiguo: { color: '#7d8ba3', weight: 4, opacity: 0.35 },
+        cadena: { color: '#0b57d0', weight: 6, opacity: 1 }
+    };
+    var COLOR_CONTORNO = '#f8fafc';
+    // Radio de acierto del clic, en píxeles (independiente del zoom).
+    var RADIO_CLIC_PX = 12;
+    var RADIO_AYUDA_CLIC_PX = 14;
 
     var estado = {
         segmentos: new Map(),
         cadena: [],
         centros: new Map(),
         capasRed: new Map(),
+        contornosRed: new Map(),
         origenManual: false,
         destinoManual: false,
         sucio: false,
@@ -234,13 +248,24 @@
                 };
                 estado.segmentos.set(segmento.id, registro);
 
-                var capa = L.polyline(coords, {
-                    color: '#0000ff',
-                    weight: 3,
-                    opacity: 1,
-                    smoothFactor: 0
+                // Contorno claro bajo la línea: da contraste sobre la imagen.
+                var contorno = L.polyline(coords, {
+                    color: COLOR_CONTORNO,
+                    weight: ESTILOS_RED.base.weight + 4,
+                    opacity: 0.7,
+                    smoothFactor: 0,
+                    interactive: false
                 });
-                capa.on('click', function () { alHacerClicSegmento(registro.id); });
+                contorno.addTo(capaRed);
+                estado.contornosRed.set(registro.id, contorno);
+
+                var capa = L.polyline(coords, {
+                    color: ESTILOS_RED.base.color,
+                    weight: ESTILOS_RED.base.weight,
+                    opacity: ESTILOS_RED.base.opacity,
+                    smoothFactor: 0,
+                    interactive: false
+                });
                 capa.addTo(capaRed);
                 estado.capasRed.set(registro.id, capa);
             });
@@ -440,7 +465,7 @@
         }, 0);
     }
 
-    function alHacerClicSegmento(id) {
+    function alHacerClicSegmento(id, latlng) {
         if (!estado.listo || estado.guardando) { return; }
 
         if (estado.cadena.some(function (referencia) { return referencia.id === id; })) {
@@ -469,9 +494,28 @@
         } else if (mismaPosicion(segmento.inicio, extremos.inicio)) {
             estado.cadena.unshift({ id: id, sentido: 'inverso' });
         } else {
+            // El clic pudo caer unos píxeles fuera del segmento contiguo:
+            // probar con el contiguo más cercano antes de rechazar.
+            var alternativa = segmentoContiguoCercano(latlng);
+            if (alternativa && alternativa !== id) {
+                alHacerClicSegmento(alternativa, latlng);
+                return;
+            }
+
+            if (tocaAlgunSegmentoCadena(segmento)) {
+                mostrarMensaje(
+                    'Ese segmento se une al interior de la cadena. Solo se puede continuar por el inicio o el final de la cadena.',
+                    'error'
+                );
+                return;
+            }
+
+            var hueco = distanciaSegmentoACadena(segmento);
             mostrarMensaje(
                 'Ese segmento no es contiguo a la cadena. Solo se pueden agregar segmentos que compartan un extremo (tolerancia ' +
-                tolerancia + ' m). Los segmentos contiguos aparecen resaltados.',
+                String(tolerancia).replace('.', ',') + ' m).' +
+                (isFinite(hueco) ? ' El extremo más cercano está a ' + hueco.toFixed(1).replace('.', ',') + ' m.' : '') +
+                ' Los segmentos contiguos aparecen resaltados en azul.',
                 'error'
             );
             return;
@@ -533,24 +577,149 @@
             mismaPosicion(segmento.inicio, extremos.inicio);
     }
 
+    /**
+     * Distancia en metros de un punto `{lat, lng}` a una polilínea dada como
+     * `[[lat, lng], ...]`. Proyección equirectangular local: suficiente para
+     * distancias de pocos metros.
+     */
+    function distanciaPuntoTramo(punto, coords) {
+        var latRef = punto.lat * Math.PI / 180;
+        var kx = 111320 * Math.cos(latRef);
+        var ky = 110540;
+        var px = punto.lng * kx;
+        var py = punto.lat * ky;
+        var mejor = Infinity;
+
+        for (var i = 1; i < coords.length; i += 1) {
+            var ax = coords[i - 1][1] * kx;
+            var ay = coords[i - 1][0] * ky;
+            var bx = coords[i][1] * kx;
+            var by = coords[i][0] * ky;
+            var dx = bx - ax;
+            var dy = by - ay;
+            var largo2 = dx * dx + dy * dy;
+            var t = largo2 === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / largo2;
+            t = Math.max(0, Math.min(1, t));
+            var distancia = Math.sqrt(
+                Math.pow(px - (ax + t * dx), 2) + Math.pow(py - (ay + t * dy), 2)
+            );
+            if (distancia < mejor) { mejor = distancia; }
+        }
+
+        return mejor;
+    }
+
+    /**
+     * Metros por píxel a la latitud actual del mapa. Permite fijar el área de
+     * acierto del clic en píxeles y que funcione igual en todos los zooms.
+     */
+    function metrosPorPixel() {
+        var centro = mapa.getCenter();
+        var punto = mapa.latLngToContainerPoint(centro);
+        var alLado = mapa.containerPointToLatLng(L.point(punto.x + 1, punto.y));
+        var distancia = centro.distanceTo(alLado);
+        return distancia > 0 ? distancia : 1;
+    }
+
+    /** Segmento más cercano al punto, dentro del radio indicado en metros. */
+    function segmentoCercano(latlng, radioMetros) {
+        var mejor = null;
+
+        estado.segmentos.forEach(function (segmento, id) {
+            var distancia = distanciaPuntoTramo(latlng, segmento.coords);
+            if (distancia <= radioMetros && (mejor === null || distancia < mejor.distancia)) {
+                mejor = { id: id, distancia: distancia };
+            }
+        });
+
+        return mejor;
+    }
+
+    /**
+     * Segmento contiguo más cercano al punto del clic. Evita rechazar un clic
+     * que cae a pocos píxeles del cruce con el extremo de la cadena.
+     */
+    function segmentoContiguoCercano(latlng) {
+        if (!latlng) { return null; }
+        var radio = RADIO_AYUDA_CLIC_PX * metrosPorPixel();
+        var enCadena = new Set(estado.cadena.map(function (referencia) { return referencia.id; }));
+        var mejor = null;
+
+        estado.segmentos.forEach(function (segmento, id) {
+            if (enCadena.has(id) || !esContiguoExtremo(segmento)) { return; }
+            var distancia = distanciaPuntoTramo(latlng, segmento.coords);
+            if (distancia <= radio && (mejor === null || distancia < mejor.distancia)) {
+                mejor = { id: id, distancia: distancia };
+            }
+        });
+
+        return mejor ? mejor.id : null;
+    }
+
+    /**
+     * ¿El segmento comparte algún extremo con cualquier segmento de la cadena
+     * (no solo con los extremos libres)? Sirve para explicar el rechazo.
+     */
+    function tocaAlgunSegmentoCadena(segmento) {
+        return estado.cadena.some(function (referencia) {
+            var otro = estado.segmentos.get(referencia.id);
+            if (!otro) { return false; }
+            return mismaPosicion(segmento.inicio, otro.inicio) ||
+                mismaPosicion(segmento.inicio, otro.fin) ||
+                mismaPosicion(segmento.fin, otro.inicio) ||
+                mismaPosicion(segmento.fin, otro.fin);
+        });
+    }
+
+    /**
+     * Separación mínima entre los extremos de un segmento y los de la cadena,
+     * para explicar por qué no se puede encadenar.
+     */
+    function distanciaSegmentoACadena(segmento) {
+        var extremos = extremosCadena();
+        var referencias = [extremos.inicio, extremos.fin].filter(Boolean);
+        if (referencias.length === 0) { return Infinity; }
+
+        var mejor = Infinity;
+        [segmento.inicio, segmento.fin].forEach(function (clave) {
+            referencias.forEach(function (referencia) {
+                var distancia = distanciaEntreClaves(clave, referencia);
+                if (distancia < mejor) { mejor = distancia; }
+            });
+        });
+
+        return mejor;
+    }
+
     function actualizarEstilosRed() {
         var enCadena = new Set(estado.cadena.map(function (referencia) { return referencia.id; }));
+        var vacia = estado.cadena.length === 0;
 
         estado.capasRed.forEach(function (capa, id) {
-            if (enCadena.has(id)) {
-                capa.setStyle({ color: '#f59e0b', weight: 6, opacity: 0.95 });
-                capa.bringToFront();
-                return;
-            }
-
             var segmento = estado.segmentos.get(id);
             if (!segmento) { return; }
 
-            if (estado.cadena.length === 0 || esContiguoExtremo(segmento)) {
-                capa.setStyle({ color: '#1161ee', weight: 3, opacity: 0.75 });
+            var estilo;
+            if (enCadena.has(id)) {
+                estilo = ESTILOS_RED.cadena;
+            } else if (vacia || esContiguoExtremo(segmento)) {
+                estilo = vacia ? ESTILOS_RED.base : ESTILOS_RED.contiguo;
             } else {
-                capa.setStyle({ color: '#c2c9d4', weight: 2, opacity: 0.3 });
+                estilo = ESTILOS_RED.noContiguo;
             }
+
+            capa.setStyle(estilo);
+
+            var contorno = estado.contornosRed.get(id);
+            if (contorno) {
+                var oculto = estilo === ESTILOS_RED.noContiguo;
+                contorno.setStyle({
+                    weight: oculto ? 0 : estilo.weight + 4,
+                    opacity: oculto ? 0 : 0.7
+                });
+            }
+
+            if (enCadena.has(id)) { capa.bringToFront(); }
         });
     }
 
@@ -563,9 +732,10 @@
         if (coords.length >= 2) {
             L.polyline(coords, {
                 color: '#f59e0b',
-                weight: 7,
-                opacity: 0.9,
-                smoothFactor: 0
+                weight: 8,
+                opacity: 0.92,
+                smoothFactor: 0,
+                interactive: false
             }).addTo(capaCadena);
 
             estado.cadena.forEach(function (referencia, indice) {
@@ -765,6 +935,25 @@
     dom.btnZoom.addEventListener('click', ajustarVistaCadena);
     dom.form.addEventListener('submit', guardar);
 
+    // El clic se resuelve sobre el mapa, no sobre cada polilínea: gana el
+    // segmento más cercano al cursor, sin depender del orden de las capas.
+    mapa.on('click', function (evento) {
+        if (!estado.listo || estado.guardando) { return; }
+        var cercano = segmentoCercano(evento.latlng, RADIO_CLIC_PX * metrosPorPixel());
+        if (!cercano) { return; }
+        alHacerClicSegmento(cercano.id, evento.latlng);
+    });
+
+    mapa.on('mousemove', function (evento) {
+        if (!estado.listo || estado.guardando) { return; }
+        var cercano = segmentoCercano(evento.latlng, RADIO_CLIC_PX * metrosPorPixel());
+        mapa.getContainer().classList.toggle('mapa-sobre-segmento', cercano !== null);
+    });
+
+    mapa.on('mouseout', function () {
+        mapa.getContainer().classList.remove('mapa-sobre-segmento');
+    });
+
     [dom.nombre, dom.descripcion, dom.tipo, dom.estadoRuta, dom.accesible].forEach(function (campo) {
         if (!campo) { return; }
         campo.addEventListener('input', marcarSucio);
@@ -814,7 +1003,10 @@
     configurarTipoReferencia('destino', 'edificio');
     actualizarVistaCadena();
 
-    Promise.all([cargarRed(), cargarRutaExistente()]).then(function () {
+    // La red debe estar cargada antes de precargar la ruta: si se hace en
+    // paralelo, la cadena se compara contra un índice vacío y los segmentos
+    // válidos se descartan (bug de "segmentos que ya no existen").
+    cargarRed().then(cargarRutaExistente).then(function () {
         estado.listo = true;
         estado.sucio = false;
         actualizarVistaCadena();

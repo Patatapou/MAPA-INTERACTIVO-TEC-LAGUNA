@@ -49,8 +49,8 @@ if (isset($_GET['editar']) && isset($datos[$_GET['editar']])) {
         <h1>Panel de administración - Edificios</h1>
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al mapa</button>
-            <a href="index.php?p=rutas" class="btn btn-secondary">🚶 Rutas</a>
-            <a href="index.php?p=editar-geometria&accion=nuevo" class="btn btn-primary">➕ Agregar edificio</a>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=rutas'">🚶 Rutas</button>
+            <a href="index.php?p=editar-geometria&accion=nuevo" class="btn btn-primary">➕ Nuevo edificio</a>
             <form action="index.php?p=logout" method="post" style="display: inline; margin: 0;">
                 <button type="submit" class="btn btn-danger">Cerrar sesión</button>
             </form>

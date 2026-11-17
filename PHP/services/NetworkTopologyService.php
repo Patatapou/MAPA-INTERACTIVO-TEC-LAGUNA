@@ -4,7 +4,7 @@
 // ==========================================
 // Componentes conexas, grados de nodo y validación estructural.
 //
-// La topología se calcula con extremos compartidos y tolerancia de 0,5 m
+// La topología se calcula con extremos compartidos y tolerancia de 2,5 m
 // (apartados 10.5 y 16.2 del plan). No se usa para calcular rutas: eso lo
 // hace Dijkstra sobre el grafo del cliente.
 

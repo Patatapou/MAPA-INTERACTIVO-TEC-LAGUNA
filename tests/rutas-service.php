@@ -66,7 +66,7 @@ function segmentoLejano(array $indice, array $excluir, string $extremo): ?array
             continue;
         }
         [$sLat, $sLng] = array_map('floatval', explode(',', $segmento['inicio']));
-        if (PathNetworkService::distanciaMetros($eLat, $eLng, $sLat, $sLng) > 1.0) {
+        if (PathNetworkService::distanciaMetros($eLat, $eLng, $sLat, $sLng) > 3.0) {
             return $segmento;
         }
     }

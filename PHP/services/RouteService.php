@@ -368,7 +368,7 @@ class RouteService
 
         if ($segmentos !== []) {
             $max = (int) ($this->config['max_segmentos_por_ruta'] ?? 500);
-            $tolerancia = (float) ($this->config['tolerancia_continuidad_m'] ?? 0.5);
+            $tolerancia = (float) ($this->config['tolerancia_continuidad_m'] ?? 2.5);
             $validacion = $this->red->validarCadena($segmentos, $tolerancia, $max);
             foreach ($validacion['errores'] as $error) {
                 $errores[] = $error;
@@ -637,7 +637,7 @@ class RouteService
     private function configPorDefecto(): array
     {
         return [
-            'tolerancia_continuidad_m' => 0.5,
+            'tolerancia_continuidad_m' => 2.5,
             'max_segmentos_por_ruta' => 500,
             'max_salto_enlace_m' => 80,
             'permitir_rutas_sin_edificio' => true,

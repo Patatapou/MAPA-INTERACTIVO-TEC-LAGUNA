@@ -39,7 +39,7 @@ if (file_exists($rutaDatos)) {
 }
 
 $configRutas = [
-    'tolerancia_continuidad_m' => 0.5,
+    'tolerancia_continuidad_m' => 2.5,
     'max_segmentos_por_ruta' => 500,
     'max_salto_enlace_m' => 80,
 ];

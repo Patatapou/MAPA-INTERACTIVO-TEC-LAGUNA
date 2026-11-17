@@ -239,6 +239,11 @@
     height: calc(100vh - 110px);
 }
 
+/* El clic se resuelve por cercanía: el cursor confirma que se acertó. */
+#map-ruta.mapa-sobre-segmento {
+    cursor: pointer;
+}
+
 .mapa-leyenda {
     position: absolute;
     left: 12px;
@@ -270,7 +275,7 @@
     flex: 0 0 auto;
 }
 
-.legend-red { background: #9aa5b1; }
+.legend-red { background: #12306b; }
 .legend-ruta { background: var(--primary); }
 .legend-otra { background: rgba(17, 97, 238, .35); }
 .legend-inicio { background: #1b7f3b; height: 10px; width: 10px; border-radius: 50%; }

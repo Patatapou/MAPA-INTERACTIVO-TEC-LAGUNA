@@ -2248,6 +2248,22 @@ Los 46 ítems de ejecución y las 14 decisiones están completados. Criterio de 
 
 **Pendiente fuera de este plan:** `docs/analysis/HALLAZGOS_MODULO_RUTAS.md` (el usuario lo indicará en otra ocasión). No se ha modificado.
 
+### 19.10. Correcciones posteriores al cierre
+
+Trabajo pedido por el usuario después de cerrar la sección 19. No reabre ítems E*; queda registrado aquí para trazabilidad.
+
+| # | Corrección | Archivos | Verificación |
+|---|---|---|---|
+| C-1 | Enlaces convertidos en botones: "🚶 Rutas" (panel de edificios) y "← Panel" (módulo de rutas). | `PHP/admin/panel.php`, `PHP/admin/rutas.php` | DOM: `BUTTON:🚶 Rutas` / `BUTTON:← Panel` con `onclick`; `regresion-general.ps1` 21/21. |
+| C-2 | Tolerancia de continuidad alineada al snapping del grafo: 0,5 → **2,5 m** en servidor y cliente. | `PathNetworkService.php`, `RouteService.php`, `NetworkTopologyService.php`, `getRedCaminos.php`, `rutas.php`, `editar-ruta.php`, `js/ruta-editor.js`, `PHP/data/settings.json` (ya tenía 2,5) | `validar-cadenas --php` 9/9 con máximo 2,50 m; `rutas-service.php` 31/31; `grafo-huella` 238/309/19/1 sin cambios. |
+| C-3 | Diagnóstico del "no detecta vecinos": a 2,5 m hay **0** T-junctions y **0** cruces sin extremo compartido; los 19 extremos sueltos coinciden con `grado1=19` de la línea base (huecos reales de la red, no del editor). La causa del fallo percibido era el área de clic (líneas de 3 px, sin zona de acierto). | `tests/diagnostico-red.mjs` | 313 segmentos, 367 huecos ≤3 m, 19 extremos aislados >2,5 m. |
+| C-4 | Clic por cercanía: el mapa elige el segmento más próximo al cursor (radio 12 px, independiente del zoom) y, si no es contiguo, prueba con el contiguo a ≤14 px. Mensaje de rechazo con la separación real. | `js/ruta-editor.js`, `css/rutas.css` | Navegador: clic a 6 px de la línea añade el segmento; clic en el cruce añade el contiguo; clic lejano no altera la cadena y reporta "extremo más cercano a 73,9 m"; clic sobre la cadena la quita. |
+| C-5 | Red más ancha y oscura: base `#12306b` peso 5 con contorno `#f8fafc` peso 9, contiguos `#0b57d0` peso 6, no contiguos gris peso 4 opacidad 0,35, cadena ámbar peso 8. | `js/ruta-editor.js`, `js/rutas-admin.js`, `css/rutas.css` | DOM: 313 trazos `rgb(18,48,107)` de 5 px y 313 contornos `rgb(248,250,252)` de 9 px; cursor puntero sobre la red. |
+| C-6 | Precarga de la cadena al editar: `cargarRed()` ahora se resuelve antes que `cargarRutaExistente()` (antes en `Promise.all`, la ruta se comparaba contra un índice vacío). | `js/ruta-editor.js` | `performance`: `getRedCaminos` 110→466 ms, `getRutas` inicia en 509 ms (secuencial). `ruta-811ed74a` precarga 5 segmentos / 97 m / 7 puntos y `ruta-45f7d2ce` 8 / 174 m / 9, sin aviso de segmentos inexistentes. Guardado real desde el editor: 200 y redirección al detalle. |
+| C-7 | Botón "Ver" eliminado de las tarjetas; el clic en la tarjeta abre el detalle. | `js/rutas-admin.js` | DOM: acciones = `A:Editar`, `BUTTON:Eliminar`; clic en tarjeta → `#detalle-panel.visible` con el nombre. |
+
+Ajustes de pruebas derivados de C-2: `tests/validar-cadenas.mjs` (`TOLERANCIA_M = 2.5`, fixture discontinua > tolerancia) y `tests/rutas-service.php` (`segmentoLejano` exige separación > 3 m). `tests/regresion-general.ps1` ya no exige `rutas.json` vacío: compara el total antes/después para no fallar con rutas reales del usuario.
+
 ---
 
 ## Anexo A — Correspondencia con el análisis

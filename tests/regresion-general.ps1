@@ -32,6 +32,17 @@ function Comprobar($nombre, $esperado, $obtenido, $detalle) {
 $datosAntes = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256
 $geoTecAntes = Get-FileHash (Join-Path $raiz 'GeoTec.js') -Algorithm SHA256
 
+# Las rutas administrativas son datos reales del usuario: la prueba exige que
+# no cambien, no que el archivo esté vacío.
+$rutasAntes = 0
+$archivoRutas = Join-Path $raiz 'PHP/data/rutas.json'
+if (Test-Path $archivoRutas) {
+    $documentoRutas = Get-Content $archivoRutas -Raw | ConvertFrom-Json
+    if ($documentoRutas.rutas) {
+        $rutasAntes = @($documentoRutas.rutas.PSObject.Properties).Count
+    }
+}
+
 # ---------- Mapa público ----------
 $anon = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $r = Llamar 'GET' "$base/index.html" $anon
@@ -77,7 +88,7 @@ Comprobar 'R-12 GET en saveGeometria devuelve 405' 405 $r.code $r.body
 $r = Llamar 'GET' "$base/index.php?p=getRutas" $ses
 $json = $r.body | ConvertFrom-Json
 Comprobar 'R-13 getRutas responde 200' 200 $r.code ''
-Comprobar 'R-14 rutas.json está vacío tras las pruebas' 0 $json.total ''
+Comprobar 'R-14 las rutas existentes no cambian' $rutasAntes $json.total ''
 
 # ---------- Los datos no cambiaron ----------
 $datosDespues = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256

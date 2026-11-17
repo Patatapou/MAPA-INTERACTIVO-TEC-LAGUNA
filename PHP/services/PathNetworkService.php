@@ -9,7 +9,8 @@
 //
 // Reglas del plan:
 //  - Identidad de nodo = `lat.toFixed(6) + "," + lng.toFixed(6)` (apartado 9.2).
-//  - Continuidad de cadena: ≤0,5 m (más estricta que el snapping de 2,5 m del grafo).
+//  - Continuidad de cadena: ≤2,5 m (la misma tolerancia de snapping que usa el
+//    grafo público en `js/pathfinding.js`).
 //  - Hidratación: inversión por sentido y sin duplicar el nodo de unión.
 
 require_once __DIR__ . '/../repositories/PathNetworkRepository.php';
@@ -24,7 +25,7 @@ class PathNetworkService
     /** @var array|null */
     private ?array $geojsonCache = null;
 
-    public const TOLERANCIA_CONTINUIDAD_M = 0.5;
+    public const TOLERANCIA_CONTINUIDAD_M = 2.5;
 
     public function __construct(?PathNetworkRepository $repo = null)
     {
@@ -135,8 +136,8 @@ class PathNetworkService
     /**
      * Nodos de la red con los segmentos que los tocan.
      *
-     * Los extremos se fusionan con la tolerancia indicada (por defecto 0,5 m,
-     * la misma que exige la validación de cadenas).
+     * Los extremos se fusionan con la tolerancia indicada (por defecto 2,5 m,
+     * la misma que exige la validación de cadenas y que usa el grafo público).
      *
      * @return array<string, array{lat: float, lng: float, segmentos: array<int, string>, grado: int}>
      */

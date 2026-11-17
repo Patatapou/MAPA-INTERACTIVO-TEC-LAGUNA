@@ -227,9 +227,9 @@
                 return [Number(punto[1]), Number(punto[0])];
             });
             var capa = L.polyline(puntos, {
-                color: '#0000ff',
-                weight: 2,
-                opacity: 1,
+                color: '#12306b',
+                weight: 4,
+                opacity: 0.85,
                 interactive: false,
                 smoothFactor: 0
             });
@@ -279,7 +279,7 @@
                 capa.bringToFront();
                 if (elemento) { elemento.classList.add('ruta-animada'); }
             } else {
-                capa.setStyle({ color: '#1161ee', weight: 4, opacity: 0.25, dashArray: null });
+                capa.setStyle({ color: '#1161ee', weight: 4, opacity: 0.4, dashArray: null });
                 if (elemento) { elemento.classList.remove('ruta-animada'); }
             }
         });
@@ -503,14 +503,6 @@
         item.appendChild(meta);
 
         var acciones = el('div', 'ruta-card-acciones');
-
-        var ver = el('button', 'btn btn-secondary', 'Ver');
-        ver.type = 'button';
-        ver.addEventListener('click', function (evento) {
-            evento.stopPropagation();
-            seleccionar(ruta.id, true);
-        });
-        acciones.appendChild(ver);
 
         var editar = el('a', 'btn btn-primary', 'Editar');
         editar.setAttribute('href', urls.editor + encodeURIComponent(ruta.id));

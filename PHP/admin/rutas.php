@@ -45,7 +45,7 @@ if (file_exists($rutaDatos)) {
 
 // Configuración del módulo (tolerancias) expuesta solo como dato de lectura.
 $configRutas = [
-    'tolerancia_continuidad_m' => 0.5,
+    'tolerancia_continuidad_m' => 2.5,
     'max_segmentos_por_ruta' => 500,
     'max_salto_enlace_m' => 80,
 ];
@@ -82,7 +82,7 @@ if (file_exists($rutaSettings)) {
             </p>
         </div>
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <a href="index.php?p=editar" class="btn btn-secondary">← Panel</a>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar'">← Panel</button>
             <a href="index.php?p=rutas&accion=nueva" class="btn btn-primary">➕ Nueva ruta</a>
             <form action="index.php?p=logout" method="post" style="display: inline; margin: 0;">
                 <button type="submit" class="btn btn-danger">Cerrar sesión</button>

@@ -27,7 +27,7 @@ const opciones = {
     json: process.argv.includes('--json'),
 };
 
-const TOLERANCIA_M = 0.5;
+const TOLERANCIA_M = 2.5;
 const MAX_SEGMENTOS = 500;
 
 // ---------- Utilidades geométricas (equivalentes a PathNetworkService) ----------
@@ -183,7 +183,7 @@ function buscarParejaContigua(indice, modo) {
                 const [aLat, aLng] = a.fin.split(',').map(Number);
                 const [bLat, bLng] = b.inicio.split(',').map(Number);
                 const salto = distanciaMetros(aLat, aLng, bLat, bLng);
-                if (salto > 2 && salto < 10) return { a, b, salto };
+                if (salto > TOLERANCIA_M && salto < 10) return { a, b, salto };
             }
         }
     }

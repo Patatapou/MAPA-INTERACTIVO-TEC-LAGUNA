@@ -310,9 +310,19 @@ Recorridos administrativos (no alteran el cálculo del mapa público). Sin base 
 ### Reglas de negocio
 
 - Nombre único (comparación sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control.
-- La cadena de segmentos debe ser contigua: extremo compartido con tolerancia de 0,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`); máximo 500 segmentos; sin IDs duplicados ni inexistentes.
+- La cadena de segmentos debe ser contigua: extremo compartido con tolerancia de 2,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`, la misma del snapping del grafo público); máximo 500 segmentos; sin IDs duplicados ni inexistentes.
 - Al actualizar se exige `updated_at` vigente; si no coincide se devuelve **409** y no se sobrescribe nada.
 - Toda alta, edición y borrado se registra en `PHP/data/audit-log.jsonl` (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
+
+### Editor de rutas: interacción y estilos
+
+- **Clic en la red**: el editor escucha el clic sobre el mapa y elige el segmento **más cercano al cursor** dentro de un radio de 12 px (independiente del zoom); no depende del orden de las capas ni del grosor de la línea. El cursor cambia a puntero (`#map-ruta.mapa-sobre-segmento`) cuando hay un segmento a tiro.
+- Si el segmento elegido no es contiguo, se busca un segmento contiguo a ≤14 px del clic antes de rechazar la operación.
+- Al rechazar, el mensaje indica la separación real al extremo más cercano de la cadena (útil para detectar huecos de la red).
+- **Estilos de la red**: base azul marino `#12306b` (peso 5) con contorno claro `#f8fafc` (peso 9); contiguos en azul `#0b57d0` (peso 6) con contorno (peso 10); no contiguos en gris azulado `#7d8ba3` (peso 4, opacidad 0,35) sin contorno; cadena en ámbar `#f59e0b` (peso 8, no interactiva). La leyenda usa el mismo azul marino.
+- **Precarga**: `cargarRed()` se resuelve **antes** de `cargarRutaExistente()` (secuencial). En paralelo, la cadena de una ruta existente se comparaba contra un índice vacío y se descartaban segmentos válidos con el aviso de "segmentos que ya no existen".
+- En el listado, la tarjeta completa abre el detalle al hacer clic (sin botón "Ver"); cada tarjeta conserva "Editar" y "Eliminar".
+- Navegación del panel con **botones** (no enlaces): "🚶 Rutas" en el panel de edificios y "← Panel" en el módulo de rutas.
 
 ### Migración de la red (una sola vez)
 
@@ -331,6 +341,7 @@ php scripts/migrar_red_caminos.php             # normaliza caminitos.geojson
 |---|---|
 | `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=238 aristas=309 grado1=19 componentes=1 rutas=348/348` y geometría `313/644` |
 | `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
+| `node tests/diagnostico-red.mjs` | Diagnóstico de la red: extremos sin pareja (19), "atascados" con interior cercano (0) y realmente aislados (19) a 2,5 m |
 | `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
 | `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
 | `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (arranca su propio servidor en el puerto 8019) |
