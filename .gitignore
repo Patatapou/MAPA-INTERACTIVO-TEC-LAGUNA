@@ -14,6 +14,8 @@ PHP/data/*.tmp.*
 server.err
 GeoTec.js.bak
 datos.json.bak
+caminitos.geojson.bak
+caminitos.geojson.bak-*
 
 # Archivos del sistema operativo
 .DS_Store

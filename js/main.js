@@ -120,10 +120,10 @@ L.geoJSON(datosTec, {
 fetch('caminitos.geojson')
     .then(resp => resp.json())
     .then(data => {
-        // Dibujar caminos sutiles en blanco
+        // Dibujar caminos sutiles en negro (transparente para no interferir con la visualización de edificios)
         L.geoJSON(data, {
             style: {
-                color: '#ffffff00',
+                color: '#0000ffff',
                 weight: 4,
                 opacity: 0.8,
                 lineCap: 'round'

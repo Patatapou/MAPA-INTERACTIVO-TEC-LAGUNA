@@ -154,8 +154,9 @@ PHP 8.4.7 CLI disponible. No hay `php.ini` cargado. `mail()` requiere SMTP confi
 
 - `datos.json` — metadata de edificios. Claves deben coincidir con `id` en `GeoTec.js`.
 - `GeoTec.js` — GeoJSON de huellas de edificio (global `datosTec`).
-- `caminitos.geojson` — red de caminos para el router Dijkstra.
+- `caminitos.geojson` — red de caminos normalizada del router Dijkstra y del módulo de rutas: 313 features (IDs `seg-xxxxxxxx`), 644 vértices. Respaldo del original en `caminitos.geojson.bak`.
 - `img/<id>/` — imágenes de carrusel por edificio.
+- `PHP/data/rutas.json` — rutas administrativas (privado, fuera de git).
 
 ## Módulo de administración de edificios (etapa actual)
 
@@ -180,6 +181,11 @@ PHP 8.4.7 CLI disponible. No hay `php.ini` cargado. `mail()` requiere SMTP confi
 | `index.php?p=saveGeometria`                          | POST: guardar edificio (metadatos + geometría)                  | Sí + CSRF    |
 | `index.php?p=saveData`                               | POST: guardar metadatos + imágenes de un edificio existente     | Sí + CSRF    |
 | `index.php?p=deleteEdificio`                         | POST: eliminar edificio                                          | Sí + CSRF    |
+| `index.php?p=rutas`                                  | Listado de rutas (`&accion=ver&id=`, `&accion=nueva`, `&accion=editar&id=`) | Sí  |
+| `index.php?p=getRutas`                               | GET: listado (`?id=` para el detalle)                            | Sí           |
+| `index.php?p=saveRuta`                               | POST: crear/actualizar ruta                                      | Sí + CSRF    |
+| `index.php?p=deleteRuta`                             | POST: eliminar ruta                                              | Sí + CSRF    |
+| `index.php?p=getRedCaminos`                          | GET: segmentos normalizados de `caminitos.geojson`               | Sí           |
 
 ### Editor de geometrías
 
@@ -248,6 +254,95 @@ PHP 8.4.7 CLI disponible. No hay `php.ini` cargado. `mail()` requiere SMTP confi
 - `PHP/data/` (usuarios, configuración, auditoría, sugerencias)
 - Logs `*.log`
 - Imágenes subidas por el panel admin (`img/`)
+
+## Módulo de gestión de rutas (caminos)
+
+Recorridos administrativos (no alteran el cálculo del mapa público). Sin base de datos: persisten en `PHP/data/rutas.json` y trabajan sobre la red normalizada de `caminitos.geojson`.
+
+### Archivos del módulo
+
+- `PHP/admin/rutas.php` — listado con buscador, filtros (tipo, solo accesibles), mapa, panel de detalle y modal de borrado
+- `PHP/admin/editar-ruta.php` — editor: mapa de la red + formulario + toolbar de cadena
+- `PHP/admin/getRutas.php`, `saveRuta.php`, `deleteRuta.php`, `getRedCaminos.php` — endpoints JSON
+- `PHP/admin/_api-rutas.php` — utilidades compartidas de la API (respuestas JSON, CSRF, parseo)
+- `PHP/services/RouteService.php` — reglas de negocio (validaciones, nombre único, conflicto 409, auditoría)
+- `PHP/services/PathNetworkService.php` — índice de la red, `validarCadena()`, `hidratar()`, Haversine
+- `PHP/services/NetworkTopologyService.php` — topología (nodos, grado, componentes) para diagnóstico
+- `PHP/repositories/RouteRepository.php` — persistencia de `rutas.json` (fail-closed, lock, `.bak`, migración de esquema)
+- `PHP/repositories/PathNetworkRepository.php` — lectura/escritura atómica de `caminitos.geojson`
+- `css/rutas.css`, `js/rutas-admin.js`, `js/ruta-editor.js` — vista y lógica de cliente
+- `scripts/migrar_red_caminos.php` — normalización de la red (CLI)
+- `tests/` — pruebas sin dependencias (ver abajo)
+
+### Modelo de datos
+
+`PHP/data/rutas.json`:
+
+```json
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-16T00:00:00+00:00",
+  "rutas": {
+    "ruta-1a2b3c4d": {
+      "id": "ruta-1a2b3c4d",
+      "nombre": "Ruta principal norte",
+      "descripcion": "",
+      "tipo": "principal",
+      "estado": "activa",
+      "accesible": true,
+      "origen": { "tipo": "edificio", "ref": "5" },
+      "destino": { "tipo": "acceso", "ref": "P1" },
+      "segmentos": [{ "id": "seg-d52f1975", "sentido": "normal" }],
+      "creado_en": "...",
+      "actualizado_en": "...",
+      "creado_por": "admin_001",
+      "actualizado_por": "admin_001"
+    }
+  }
+}
+```
+
+- `tipo`: `principal | alterna | acceso | emergencia | institucional`
+- `estado`: `activa | inactiva | borrador`
+- `segmentos`: solo `{id, sentido}`; `sentido` es `normal | inverso`. La geometría y la distancia **siempre** las calcula el servidor.
+- `origen`/`destino`: `{tipo, ref}` con `tipo` en `acceso | edificio | nodo` y `ref` validado contra `datos.json`.
+
+### Reglas de negocio
+
+- Nombre único (comparación sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control.
+- La cadena de segmentos debe ser contigua: extremo compartido con tolerancia de 0,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`); máximo 500 segmentos; sin IDs duplicados ni inexistentes.
+- Al actualizar se exige `updated_at` vigente; si no coincide se devuelve **409** y no se sobrescribe nada.
+- Toda alta, edición y borrado se registra en `PHP/data/audit-log.jsonl` (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
+
+### Migración de la red (una sola vez)
+
+```powershell
+php scripts/migrar_red_caminos.php --dry-run   # simulación, no escribe
+php scripts/migrar_red_caminos.php             # normaliza caminitos.geojson
+```
+
+- Normaliza topología (extremos compartidos), asigna IDs estables `seg-xxxxxxxx`, conserva `properties` e IDs previos y deja respaldo `caminitos.geojson.bak.<marca>`.
+- Es **idempotente**: volver a ejecutarlo no cambia el archivo (línea base 313 features / 644 vértices).
+- La migración no toca `datos.json`, `GeoTec.js` ni `PHP/public/`.
+
+### Pruebas (sin PHPUnit ni Composer)
+
+| Comando | Qué valida |
+|---|---|
+| `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=238 aristas=309 grado1=19 componentes=1 rutas=348/348` y geometría `313/644` |
+| `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
+| `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
+| `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
+| `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (arranca su propio servidor en el puerto 8019) |
+| `powershell -File tests/sesion-expirada.ps1` | S-10: sesión caducada/vigente con archivos de sesión fabricados (puerto 8020) |
+| `powershell -File tests/regresion-general.ps1` | Regresión: mapa público, `datos.json`/`GeoTec.js` intactos, CSRF de edificios |
+
+`tests/_pruebas.php`, `tests/_validar-cadenas.php` y `tests/_escritor-concurrente.php` son soporte interno (mini-harness y helpers).
+
+### Router de desarrollo
+
+- `router.php` bloquea por HTTP `PHP/data/`, `PHP/auth/`, `PHP/services/`, `PHP/repositories/`, `scripts/`, `tests/`, `docs/` y extensiones peligrosas (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`).
+- `start-server.ps1` ya arranca `php -S 127.0.0.1:8000 router.php`; sin él, `PHP/data/` quedaría accesible en local.
 
 ## Comportamiento toggle
 

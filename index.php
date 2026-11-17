@@ -41,6 +41,26 @@ if(!isset($_GET['p'])){
     // Ruta protegida: editor de geometrías (página completa)
     requerirAdmin();
     $archivo = 'PHP/admin/editar-geometria.php';
+}else if($_GET['p']=='rutas'){
+    // Ruta protegida: gestión de rutas (listado, detalle, alta y edición)
+    requerirAdmin();
+    $archivo = 'PHP/admin/rutas.php';
+}else if($_GET['p']=='getRutas'){
+    // Ruta protegida: endpoint de consulta de rutas
+    requerirAdmin();
+    $archivo = 'PHP/admin/getRutas.php';
+}else if($_GET['p']=='saveRuta'){
+    // Ruta protegida: endpoint de alta/edición de rutas
+    requerirAdmin();
+    $archivo = 'PHP/admin/saveRuta.php';
+}else if($_GET['p']=='deleteRuta'){
+    // Ruta protegida: endpoint de eliminación de rutas
+    requerirAdmin();
+    $archivo = 'PHP/admin/deleteRuta.php';
+}else if($_GET['p']=='getRedCaminos'){
+    // Ruta protegida: endpoint de consulta de la red de caminos
+    requerirAdmin();
+    $archivo = 'PHP/admin/getRedCaminos.php';
 }else{
     $archivo = __DIR__ . '/404.php';
 }
