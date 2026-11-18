@@ -9,12 +9,15 @@
 //   node tests/grafo-huella.mjs
 //   node tests/grafo-huella.mjs --json
 //
-// Salida esperada (línea base del proyecto):
-//   nodos=238
-//   aristas=309
-//   grado1=19
+// Salida esperada (línea base del proyecto, red con revision=2):
+//   nodos=241
+//   aristas=312
+//   grado1=20
 //   componentes=1
 //   rutas=348/348
+//
+// La red es editable desde el panel: si un administrador cambia segmentos de
+// forma deliberada, actualiza esta línea base junto con el cambio.
 //
 // Código de salida: 0 si coincide con la línea base; 1 si difiere.
 
@@ -25,6 +28,7 @@ const RAIZ = process.cwd();
 const leer = (rel) => fs.readFileSync(`${RAIZ}/${rel}`, 'utf8');
 
 // Cargar utilidades existentes en el contexto global (igual que el navegador).
+vm.runInThisContext(leer('js/geo-utils.js'));
 vm.runInThisContext(leer('js/beacons-simulation.js'));
 vm.runInThisContext(leer('js/pathfinding.js'));
 
@@ -35,9 +39,9 @@ const caminitos = JSON.parse(leer('caminitos.geojson'));
 const datos = JSON.parse(leer('datos.json'));
 
 const LINEA_BASE = {
-    nodos: 238,
-    aristas: 309,
-    grado1: 19,
+    nodos: 241,
+    aristas: 312,
+    grado1: 20,
     componentes: 1,
     rutas: '348/348',
 };
@@ -45,8 +49,10 @@ const LINEA_BASE = {
 // Huella de la red ya normalizada (se comprueba solo con --geometria).
 // 314/646 → 313/644: se descarta el micro-tramo original de 0,107 m, que no
 // puede ser arista del grafo (sus dos extremos caen en el mismo nodo).
+// 313/644 → 312/644: edición del administrador con el editor de red
+// (revision=2), que quitó tres segmentos y añadió dos.
 const LINEA_BASE_GEOMETRIA = {
-    features: 313,
+    features: 312,
     vertices: 644,
 };
 

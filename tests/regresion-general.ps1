@@ -31,6 +31,7 @@ function Comprobar($nombre, $esperado, $obtenido, $detalle) {
 
 $datosAntes = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256
 $geoTecAntes = Get-FileHash (Join-Path $raiz 'GeoTec.js') -Algorithm SHA256
+$redAntes = Get-FileHash (Join-Path $raiz 'caminitos.geojson') -Algorithm SHA256
 
 # Las rutas administrativas son datos reales del usuario: la prueba exige que
 # no cambien, no que el archivo esté vacío.
@@ -61,7 +62,14 @@ $datos = Get-Content (Join-Path $raiz 'datos.json') -Raw | ConvertFrom-Json
 $entradas = @($datos.PSObject.Properties).Count
 Comprobar 'R-06 datos.json conserva sus entradas' 58 $entradas ''
 $geo = Get-Content (Join-Path $raiz 'caminitos.geojson') -Raw | ConvertFrom-Json
-Comprobar 'R-07 caminitos.geojson conserva los segmentos' 313 @($geo.features).Count ''
+# La red es editable desde el panel: el número de segmentos puede cambiar de
+# forma legítima. Lo que la regresión debe garantizar es que el archivo siga en
+# formato v2, con IDs únicos y sin modificarse durante la propia prueba.
+$totalSegmentos = @($geo.features).Count
+$idsUnicos = @($geo.features | ForEach-Object { $_.properties.id } | Sort-Object -Unique).Count
+Comprobar 'R-07 caminitos.geojson en formato v2' 2 ([int]$geo.schema_version) ''
+Comprobar 'R-07 caminitos.geojson no está vacío' $true ($totalSegmentos -gt 0) ''
+Comprobar 'R-07 caminitos.geojson tiene IDs únicos' $totalSegmentos $idsUnicos ''
 
 # ---------- CRUD de edificios sigue protegido ----------
 $ses = New-Object Microsoft.PowerShell.Commands.WebRequestSession
@@ -93,8 +101,10 @@ Comprobar 'R-14 las rutas existentes no cambian' $rutasAntes $json.total ''
 # ---------- Los datos no cambiaron ----------
 $datosDespues = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256
 $geoTecDespues = Get-FileHash (Join-Path $raiz 'GeoTec.js') -Algorithm SHA256
+$redDespues = Get-FileHash (Join-Path $raiz 'caminitos.geojson') -Algorithm SHA256
 Comprobar 'R-15 datos.json sin cambios' $datosAntes.Hash $datosDespues.Hash ''
 Comprobar 'R-16 GeoTec.js sin cambios' $geoTecAntes.Hash $geoTecDespues.Hash ''
+Comprobar 'R-17 caminitos.geojson sin cambios' $redAntes.Hash $redDespues.Hash ''
 
 $resultados | ForEach-Object { Write-Host $_ }
 $fallos = @($resultados | Where-Object { $_ -like 'FALLO*' }).Count

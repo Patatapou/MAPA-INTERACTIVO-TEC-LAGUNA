@@ -154,7 +154,7 @@ PHP 8.4.7 CLI disponible. No hay `php.ini` cargado. `mail()` requiere SMTP confi
 
 - `datos.json` — metadata de edificios. Claves deben coincidir con `id` en `GeoTec.js`.
 - `GeoTec.js` — GeoJSON de huellas de edificio (global `datosTec`).
-- `caminitos.geojson` — red de caminos normalizada del router Dijkstra y del módulo de rutas: 313 features (IDs `seg-xxxxxxxx`), 644 vértices. Respaldo del original en `caminitos.geojson.bak`.
+- `caminitos.geojson` — red de caminos normalizada del router Dijkstra y del módulo de rutas: v2 con `revision` y `next_seq`; 312 features (IDs `seg-xxxxxxxx` o `seg-000NNN`), 644 vértices. Respaldo del original en `caminitos.geojson.bak`.
 - `img/<id>/` — imágenes de carrusel por edificio.
 - `PHP/data/rutas.json` — rutas administrativas (privado, fuera de git).
 
@@ -332,16 +332,16 @@ php scripts/migrar_red_caminos.php             # normaliza caminitos.geojson
 ```
 
 - Normaliza topología (extremos compartidos), asigna IDs estables `seg-xxxxxxxx`, conserva `properties` e IDs previos y deja respaldo `caminitos.geojson.bak.<marca>`.
-- Es **idempotente**: volver a ejecutarlo no cambia el archivo (línea base 313 features / 644 vértices).
+- Es **idempotente**: volver a ejecutarlo no cambia el archivo (verifica la huella con `tests/grafo-huella.mjs`).
 - La migración no toca `datos.json`, `GeoTec.js` ni `PHP/public/`.
 
 ### Pruebas (sin PHPUnit ni Composer)
 
 | Comando | Qué valida |
 |---|---|
-| `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=238 aristas=309 grado1=19 componentes=1 rutas=348/348` y geometría `313/644` |
+| `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=241 aristas=312 grado1=20 componentes=1 rutas=348/348` y geometría `312/644` |
 | `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
-| `node tests/diagnostico-red.mjs` | Diagnóstico de la red: extremos sin pareja (19), "atascados" con interior cercano (0) y realmente aislados (19) a 2,5 m |
+| `node tests/diagnostico-red.mjs` | Diagnóstico de la red: extremos sin pareja, "atascados" con interior cercano y realmente aislados a 2,5 m (informe, sin umbral) |
 | `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
 | `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
 | `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (arranca su propio servidor en el puerto 8019) |
@@ -352,8 +352,68 @@ php scripts/migrar_red_caminos.php             # normaliza caminitos.geojson
 
 ### Router de desarrollo
 
-- `router.php` bloquea por HTTP `PHP/data/`, `PHP/auth/`, `PHP/services/`, `PHP/repositories/`, `scripts/`, `tests/`, `docs/` y extensiones peligrosas (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`).
+- `router.php` bloquea por HTTP `PHP/data/`, `PHP/auth/`, `PHP/services/`, `PHP/repositories/`, `scripts/`, `tests/`, `docs/` y extensiones peligrosas (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`, `.lock`). También bloquea cualquier nombre que contenga `.bak` (respaldos con marca de tiempo).
 - `start-server.ps1` ya arranca `php -S 127.0.0.1:8000 router.php`; sin él, `PHP/data/` quedaría accesible en local.
+
+## Editor de la red de caminos
+
+Editor gráfico de `caminitos.geojson` (consultar, dibujar, editar vértices y eliminar segmentos). No altera el cálculo del mapa público: `dijkstra`, `buildGraph`, `findClosestNode` y `js/main.js` siguen intactos.
+
+### Formato v2 de `caminitos.geojson`
+
+- Única fuente de verdad de la red. Ahora incluye `schema_version: 2`, `revision` (entero monotónico) y `next_seq` (siguiente secuencia de IDs).
+- IDs históricos `seg-<8hex>` (y `seg-<8hex>-NN`) se conservan porque los usa `PHP/data/rutas.json`. Los segmentos nuevos reciben `seg-<6 dígitos>` a partir de `next_seq`; mientras no se guardan usan `tmp-<...>` y el servidor los renumera.
+- La migración se aplica una sola vez con `php scripts/migrar_red_v2.php --apply` (idempotente, con respaldo y verificación de huella). No confundir con `scripts/migrar_red_caminos.php`, que normaliza la topología.
+- Respaldo de cada guardado en `PHP/data/backups/caminitos/` (retención de 30). Escritura con `flock`, archivo temporal y `rename` atómico; lectura **fail-closed**.
+
+### Acceso y estructura de la vista
+
+- El editor **solo se abre desde el módulo de rutas** con el botón «🗺️ Red de caminos» (`PHP/admin/rutas.php`). El panel de edificios conserva únicamente «← Volver al mapa», «🚶 Rutas», «➕ Nuevo edificio» y «Cerrar sesión».
+- Las vistas del editor vuelven con «← Volver a rutas» (`index.php?p=rutas`).
+- La barra lateral divide **Segmentos** y **Validación** al 50 % con un divisor arrastrable (`#red-splitter`, `role="separator"`): arrastre con el ratón o táctil, o `↑`/`↓` con el teclado. El reparto se guarda en memoria (`estado.altoSegmentos`) y se recalcula en `resize`; por debajo de 861 px el divisor se oculta y cada bloque usa su `max-height`.
+- Cada bloque tiene su propio scroll: la lista de segmentos y `.red-validacion-cuerpo`.
+
+### Rutas del editor
+
+| Ruta | Descripción | Requiere auth |
+|---|---|---|
+| `index.php?p=editar-red` | Editor gráfico (página completa) | Sí |
+| `index.php?p=getRed` | GET: red vigente + `revision` + `segmentos` | Sí |
+| `index.php?p=save-red` | POST: validar y guardar (CSRF + `base_revision`) | Sí + CSRF |
+
+`save-red.php` responde 400 (E01–E05, E07, E08), 403 (sesión/CSRF), 405 (método), 409 (revisión obsoleta, E06) o 500. El cuerpo acepta `FormData` o JSON; `base_revision` es obligatorio y la petición está limitada a 2 MB.
+
+### Modos del editor
+
+- **Consultar**: clic en un segmento (mapa o lista) para ver ID, estado, vértices y longitud.
+- **Dibujar**: polilínea manual con snapping propio a vértices/segmentos a ≤8 m (preferencia de vértice si está a ≤1 m de la mejor arista). El botón «✏️ Dibujar» funciona como **interruptor**: un clic entra en modo dibujo y otro sale sin añadir nada. El trazado se convierte en segmento solo con «✔️ Terminar dibujo» (visible únicamente mientras se dibuja), con Enter o con doble clic; Esc y el segundo clic en «Dibujar» cancelan. Se dibuja un `tmp-`.
+- **Editar**: Leaflet-Geoman gestiona los vértices del segmento seleccionado (`pm:markerdrag`, `pm:markerdragend`, `pm:vertexadded`, `pm:vertexremoved`, `pm:edit`). La capa de referencia (edificios y accesos) es de solo lectura.
+- **Eliminar**: marca/desmarca segmentos existentes para borrarlos al guardar. Un segmento `tmp-` (nunca guardado) se descarta directamente.
+- **Ancho y clic**: el trazo visible usa grosor 6–7 px (9 px al seleccionar) y cada segmento lleva además una polilínea transparente de 20 px (`red-golpe`) con el mismo manejador de clic, para acertar con el cursor sin engordar el mapa.
+- La validación en vivo (`js/network-analysis.js`) reutiliza `buildGraph()` y replica E01–E08/W01–W06. E08 bloquea el guardado si la propuesta deja sin ruta algún par puerta→edificio; el servidor lo revalida con `NetworkService`/`NetworkGraph`.
+
+### Arquitectura del módulo
+
+- `PHP/admin/editar-red.php` — vista, datos embebidos (`RED_INICIAL`, `RED_REVISION`, `RED_CSRF`, `RED_PAIRS`, `RED_METADATOS`).
+- `PHP/admin/getRed.php` — estado vigente.
+- `save-red.php` (raíz) — endpoint POST de guardado.
+- `PHP/services/NetworkService.php` — reglas E01–E08/W01–W06, asignación de IDs, diferencias, auditoría y pares de referencia.
+- `PHP/services/NetworkGraph.php` — port PHP de `buildGraph`, Dijkstra, componentes, extremos, aristas, métricas y alcanzabilidad.
+- `PHP/repositories/NetworkRepository.php` — v2, 409, respaldos, retención y `rename` atómico. Extiende `PathNetworkRepository`; el editor nunca usa `PathNetworkRepository::guardar()`.
+- `scripts/migrar_red_v2.php` — migración al formato v2 (CLI).
+- `js/network-analysis.js` — análisis topológico del cliente; requiere `js/geo-utils.js` y `js/pathfinding.js`.
+- `js/network-editor.js` — estado, capas, modos, dibujo, Geoman, lista/buscador, validación en vivo, guardar/descartar y `beforeunload`.
+- `css/red-editor.css` — layout sidebar/mapa, toolbar, leyenda, lista, badges, detalle y responsive.
+
+### Pruebas del módulo
+
+| Comando | Qué valida |
+|---|---|
+| `node tests/red/paridad-grafo.mjs` | Paridad JS/PHP del grafo y la alcanzabilidad (201 redes) |
+| `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella real, E01–E08, W01/W04/W05/W06, snapping y 348 pares |
+| `php tests/red/integridad-red.php` | Archivo ausente/corrupto/v1, respaldo, 409, IDs `tmp-` y retención de 30 respaldos |
+| `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + asignación de IDs y auditoría |
+| `powershell -File tests/red/seguridad-red.ps1` | 403/405/409/400 por HTTP, CSRF, límite de 2 MB y `PHP/data/`/respaldos inaccesibles (puerto 8021) |
 
 ## Comportamiento toggle
 

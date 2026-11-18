@@ -58,18 +58,23 @@ foreach ($directoriosBloqueados as $directorio) {
 }
 
 // 2) Extensiones sensibles (respaldos, logs, auditoría, configuración).
-$extensionesBloqueadas = ['bak', 'jsonl', 'log', 'ini', 'env', 'tmp', 'sql', 'md'];
+$extensionesBloqueadas = ['bak', 'jsonl', 'log', 'ini', 'env', 'tmp', 'sql', 'md', 'lock'];
 $extension = strtolower(pathinfo($rutaMin, PATHINFO_EXTENSION));
 if ($extension !== '' && in_array($extension, $extensionesBloqueadas, true)) {
     denegarAcceso();
 }
 
-// 3) Archivos y directorios ocultos (por ejemplo `.env`, `.git`).
+// 3) Respaldos con marca de tiempo (`caminitos.geojson.bak-20260101010101`).
+if (strpos($rutaMin, '.bak') !== false) {
+    denegarAcceso();
+}
+
+// 4) Archivos y directorios ocultos (por ejemplo `.env`, `.git`).
 if (preg_match('#(^|/)\.[^/]#', $rutaMin) === 1) {
     denegarAcceso();
 }
 
-// 4) Nombres con sufijo de archivo temporal de escritura atómica.
+// 5) Nombres con sufijo de archivo temporal de escritura atómica.
 if (strpos($rutaMin, '.tmp.') !== false) {
     denegarAcceso();
 }

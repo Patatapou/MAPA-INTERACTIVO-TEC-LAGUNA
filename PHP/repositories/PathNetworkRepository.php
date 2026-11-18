@@ -18,8 +18,15 @@ class PathNetworkRepository
 {
     private string $rutaRed;
 
-    /** Patrón de ID de segmento aprobado (D11). */
-    private const PATRON_ID = '/^seg-[a-f0-9]{8}(-\d{2})?$/';
+    /**
+     * Patrón de ID de segmento aprobado (D11).
+     *
+     * Se admiten dos formatos:
+     *  - `seg-` + 8 hex (+ sufijo `-NN`): IDs históricos de la migración.
+     *  - `seg-` + 6 dígitos: IDs secuenciales que asigna el editor de red
+     *    (formato v2, `next_seq`).
+     */
+    private const PATRON_ID = '/^seg-(?:[a-f0-9]{8}(?:-\d{2})?|\d{6})$/';
 
     public function __construct(?string $rutaRed = null)
     {

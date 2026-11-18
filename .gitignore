@@ -8,6 +8,11 @@ php.ini
 # Datos generados en tiempo de ejecución (persistencia JSON)
 PHP/data/
 PHP/data/*.tmp.*
+PHP/data/backups/
+
+# Bloqueos y escrituras temporales de los repositorios
+*.lock
+*.tmp.*
 
 # Logs
 *.log

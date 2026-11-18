@@ -4430,7 +4430,7 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-18T01:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
@@ -4440,8 +4440,8 @@
                         25.533294254063573
                     ],
                     [
-                        -103.43532317455913,
-                        25.533503000803627
+                        -103.43533516125768,
+                        25.53349657657344
                     ]
                 ]
             }
@@ -4456,14 +4456,14 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-18T01:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -103.43532317455913,
-                        25.533503000803627
+                        -103.43533784395568,
+                        25.53349899502875
                     ],
                     [
                         -103.43473244296258,
@@ -6266,7 +6266,7 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-18T01:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
@@ -6276,8 +6276,8 @@
                         25.53357085244846
                     ],
                     [
-                        -103.43534669788454,
-                        25.533502960030997
+                        -103.43533247464788,
+                        25.53349657657344
                     ]
                 ]
             }
@@ -7306,32 +7306,6 @@
         },
         {
             "type": "Feature",
-            "id": "seg-b6d5d9d3",
-            "properties": {
-                "id": "seg-b6d5d9d3",
-                "nombre": "Segmento 279",
-                "tipo": "peatonal",
-                "accesible": true,
-                "estado": "activa",
-                "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        -103.43476651714047,
-                        25.534590634587794
-                    ],
-                    [
-                        -103.4347402305126,
-                        25.534590634587794
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
             "id": "seg-28ef0e06",
             "properties": {
                 "id": "seg-28ef0e06",
@@ -7778,58 +7752,6 @@
         },
         {
             "type": "Feature",
-            "id": "seg-6f430017",
-            "properties": {
-                "id": "seg-6f430017",
-                "nombre": "Segmento 297",
-                "tipo": "peatonal",
-                "accesible": true,
-                "estado": "activa",
-                "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        -103.43474021944344,
-                        25.53459197297771
-                    ],
-                    [
-                        -103.43473798177116,
-                        25.53459193755476
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "id": "seg-f8e2eb44",
-            "properties": {
-                "id": "seg-f8e2eb44",
-                "nombre": "Segmento 298",
-                "tipo": "peatonal",
-                "accesible": true,
-                "estado": "activa",
-                "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        -103.43473798177116,
-                        25.53459193755476
-                    ],
-                    [
-                        -103.43462199802653,
-                        25.534590101501138
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
             "id": "seg-3347ad5d",
             "properties": {
                 "id": "seg-3347ad5d",
@@ -8217,6 +8139,95 @@
                     ]
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000314",
+            "properties": {
+                "id": "seg-000314",
+                "nombre": "Segmento 311",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-18T01:59:12+00:00",
+                "actualizado_en": "2026-11-18T01:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43568090021672,
+                        25.52946486838039
+                    ],
+                    [
+                        -103.4358955160561,
+                        25.52949147228027
+                    ],
+                    [
+                        -103.43591697764005,
+                        25.529353615644144
+                    ],
+                    [
+                        -103.43616910029597,
+                        25.529382045679583
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000315",
+            "properties": {
+                "id": "seg-000315",
+                "nombre": "Segmento 312",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-18T01:59:12+00:00",
+                "actualizado_en": "2026-11-18T01:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43462199802653,
+                        25.534590101501138
+                    ],
+                    [
+                        -103.43476460632746,
+                        25.534589819332542
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000316",
+            "properties": {
+                "id": "seg-000316",
+                "nombre": "Segmento 313",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-18T02:38:05+00:00",
+                "actualizado_en": "2026-11-18T02:38:05+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43597199338083,
+                        25.532150289679315
+                    ],
+                    [
+                        -103.43597599365037,
+                        25.532559917659853
+                    ]
+                ]
+            }
         }
-    ]
+    ],
+    "schema_version": 2,
+    "revision": 3,
+    "next_seq": 317
 }

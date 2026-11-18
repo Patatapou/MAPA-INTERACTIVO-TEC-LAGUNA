@@ -7,10 +7,12 @@
  * Uso:
  *   node tests/diagnostico-red.mjs
  *
- * Salida esperada (línea base con tolerancia 2,5 m):
- *   Extremos sin pareja por extremo: 19
+ * Salida esperada (línea base con tolerancia 2,5 m, red revision=2):
+ *   Extremos sin pareja por extremo: 21
  *   Extremos "atascados": 0
- *   Extremos realmente aislados: 19
+ *   Extremos realmente aislados: 21
+ *
+ * La red es editable: si cambia de forma deliberada, actualiza la línea base.
  *
  * Código de salida: siempre 0 (es un informe, no una prueba con umbral).
  */

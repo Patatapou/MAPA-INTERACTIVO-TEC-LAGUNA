@@ -1,10 +1,74 @@
 # PLAN DE IMPLEMENTACIÓN — GESTIÓN DE LA RED DE CAMINOS
 
-> **Estado:** propuesta para aprobación. No se ha implementado nada.
-> **Fecha:** 2026-11-16 · **Rama de trabajo sugerida:** `RaMaik`
+> **Estado:** ✅ implementado y verificado (E0–E6 completadas).
+> **Fecha:** 2026-11-16 · **Rama de trabajo:** `RaMaik`
 > **Relación con otros documentos:**
 > - `PLAN_MODULO_GESTION_RUTAS.md` (OpenCode) entendió "rutas" como recorridos nombrados. Este plan **no lo reemplaza por completo**: cubre lo que ese plan dejó como *Fase 3 opcional* ("edición gráfica de la red") y lo convierte en el objetivo principal.
 > - `PLAN_REESTRUCTURACION_PROYECTO.md` define la nueva estructura de carpetas. **Las rutas de archivos de este plan usan la estructura nueva**; la tabla de equivalencias está en el apartado 14.
+
+---
+
+## 0. Seguimiento de ejecución
+
+> **Cómo usar esta sección.** Marca `[x]` al terminar una tarea y actualiza **Punto de retorno** antes de interrumpir el trabajo. Los identificadores `E<etapa>.<tarea>` se usan en los mensajes de progreso para saber exactamente dónde se quedó la implementación.
+>
+> **Punto de retorno actual:** plan completado (E0–E6). No queda trabajo pendiente de este plan.
+
+| Etapa | Estado |
+|---|---|
+| E0 · Preparación del entorno de pruebas | ✅ completada |
+| E1 · Backend de datos y validación | ✅ completada |
+| E2 · Endpoints, router e integración con el panel | ✅ completada |
+| E3 · Análisis topológico en el cliente | ✅ completada |
+| E4 · Editor gráfico (vista, JS y CSS) | ✅ completada |
+| E5 · Pruebas de integridad, validación y seguridad | ✅ completada |
+| E6 · Documentación y cierre | ✅ completada |
+
+### E0 · Preparación del entorno de pruebas
+
+- [x] **E0.1** Cifras de referencia verificadas: `nodos=238 aristas=309 grado1=19 componentes=1`, `rutas=348/348`, `features=313 vertices=644` (`node tests/grafo-huella.mjs --geometria`).
+- [x] **E0.2** Extraer `distanciaMetros()` a `js/geo-utils.js` y cargarlo antes de `pathfinding.js` en `index.html`, `beacons-simulation.js` y las pruebas.
+
+### E1 · Backend de datos y validación
+
+- [x] **E1.1** `PHP/services/NetworkGraph.php`: port PHP de `buildGraph`, Dijkstra, componentes, extremos libres, aristas, métricas y alcanzabilidad.
+- [x] **E1.2** `PHP/repositories/NetworkRepository.php`: formato v2 estricto, lectura fail-closed, `flock`, control de revisión (409), respaldo con retención de 30 y `rename` atómico.
+- [x] **E1.3** `PHP/repositories/PathNetworkRepository.php`: patrón de ID ampliado para aceptar `seg-\d{6}` además de los históricos `seg-<8hex>`.
+- [x] **E1.4** `PHP/services/NetworkService.php`: validación E01–E08, advertencias W01–W06, asignación de IDs, diferencias, auditoría y pares de referencia.
+- [x] **E1.5** `scripts/migrar_red_v2.php`: migración idempotente con `--apply`, respaldo y verificación de huella. Migración real aplicada (`revision=1`, `next_seq=314`).
+- [x] **E1.6** Endpoints `save-red.php` (POST, CSRF, 400/403/409/500) y `PHP/admin/getRed.php` (GET estado vigente).
+- [x] **E1.7** Prueba de paridad JS/PHP: `tests/red/paridad-grafo.mjs` + `tests/red/_grafo-php.php` (26 redes).
+
+### E2 · Endpoints, router e integración con el panel
+
+- [x] **E2.1** Registrar en `index.php` las rutas `editar-red` → `PHP/admin/editar-red.php`, `getRed` → `PHP/admin/getRed.php`, `save-red` → `save-red.php`.
+- [x] **E2.2** Añadir el botón **🗺️ Red de caminos** en el header de `PHP/admin/panel.php`.
+- [x] **E2.3** Revisar `router.php` y `.gitignore` para excluir `.lock`, `.tmp.*` y `PHP/data/backups/`.
+
+### E3 · Análisis topológico en el cliente
+
+- [x] **E3.1** `js/network-analysis.js`: `redClaveNodo`, `redLongitud`, `redComponentes`, `redExtremosLibres`, `redParesAlcanzables`, `redAjustarPuntoARed`, `redAnalizarRed` (E08 local + W01–W06), intersección de segmentos y recuadro.
+- [x] **E3.2** Verificar paridad del análisis cliente con `NetworkGraph`/`NetworkService` sobre la red real (`tests/red/analisis-cliente.mjs`, 30 comprobaciones).
+
+### E4 · Editor gráfico
+
+- [x] **E4.1** `PHP/admin/editar-red.php`: layout, toolbar de modos, leyenda, lista, panel de validación y datos embebidos.
+- [x] **E4.2** `css/red-editor.css`: layout sidebar/mapa, toolbar, leyenda, lista, badges, avisos, mensaje, detalle y responsive.
+- [x] **E4.3** `js/network-editor.js`: estado y capas, modos consultar/dibujar/editar/eliminar, snapping, Geoman, lista/buscador, panel de validación en vivo, guardar/descartar y `beforeunload`.
+- [x] **E4.4** Manejo de respuestas 400/403/409/500 (mensajes, refresco de revisión y `id_map`).
+
+### E5 · Pruebas de integridad, validación y seguridad
+
+- [x] **E5.1** `tests/red/integridad-red.php`: archivo ausente/corrupto/v1, respaldo, conflicto de revisión, IDs `tmp-` y retención de respaldos (21/21).
+- [x] **E5.2** `tests/red/validacion-red.php`: un caso por cada E01–E08 y W01–W06, incluida la regresión de alcanzabilidad (28/28).
+- [x] **E5.3** `tests/red/seguridad-red.ps1`: sin sesión (403), sin CSRF (403), método incorrecto (405), revisión obsoleta (409) y petición sobredimensionada (400).
+- [x] **E5.4** Regresión: `php -l` de los archivos nuevos, `node --check`, `node tests/grafo-huella.mjs --geometria`, `node tests/red/paridad-grafo.mjs`, `node tests/red/analisis-cliente.mjs`, `php tests/rutas-repository.php`, `php tests/rutas-service.php` y `powershell -File tests/regresion-general.ps1`.
+
+### E6 · Documentación y cierre
+
+- [x] **E6.1** Actualizar `AGENTS.md` con el módulo de red (archivos, rutas, formato v2, respaldos y pruebas).
+- [x] **E6.2** Actualizar este plan (estado, decisiones tomadas y punto de retorno final).
+- [x] **E6.3** Revisar que `PHP/public/`, `js/main.js` y el cálculo del mapa público siguen intactos (cubierto por `tests/regresion-general.ps1`).
 
 ---
 

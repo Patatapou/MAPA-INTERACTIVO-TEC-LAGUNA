@@ -83,6 +83,7 @@ if (file_exists($rutaSettings)) {
         </div>
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar'">← Panel</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar-red'">🗺️ Red de caminos</button>
             <a href="index.php?p=rutas&accion=nueva" class="btn btn-primary">➕ Nueva ruta</a>
             <form action="index.php?p=logout" method="post" style="display: inline; margin: 0;">
                 <button type="submit" class="btn btn-danger">Cerrar sesión</button>

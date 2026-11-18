@@ -61,6 +61,18 @@ if(!isset($_GET['p'])){
     // Ruta protegida: endpoint de consulta de la red de caminos
     requerirAdmin();
     $archivo = 'PHP/admin/getRedCaminos.php';
+}else if($_GET['p']=='editar-red'){
+    // Ruta protegida: editor gráfico de la red de caminos (página completa)
+    requerirAdmin();
+    $archivo = 'PHP/admin/editar-red.php';
+}else if($_GET['p']=='getRed'){
+    // Ruta protegida: estado vigente de caminitos.geojson
+    requerirAdmin();
+    $archivo = 'PHP/admin/getRed.php';
+}else if($_GET['p']=='save-red'){
+    // Ruta protegida: guardado atómico de la red (CSRF, revisión y validación)
+    requerirAdmin();
+    $archivo = __DIR__ . '/save-red.php';
 }else{
     $archivo = __DIR__ . '/404.php';
 }
