@@ -16,7 +16,7 @@ Write-Host ""
 Write-Host "Presiona Ctrl+C para detener el servidor." -ForegroundColor Yellow
 Write-Host "Los errores y peticiones se registran en server.err" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "Protección: router.php bloquea backend, PHP/data, scripts, tests y" -ForegroundColor DarkGray
+Write-Host "Protección: router.php bloquea backend, database, DUMP, scripts, tests y" -ForegroundColor DarkGray
 Write-Host "respaldos/logs (.bak, .jsonl, .log). Solo para desarrollo local." -ForegroundColor DarkGray
 Write-Host ""
 

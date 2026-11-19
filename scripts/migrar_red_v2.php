@@ -22,10 +22,11 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../backend/services/NetworkGraph.php';
+require_once __DIR__ . '/../backend/bootstrap.php';
+require_once BACKEND_PATH . '/services/NetworkGraph.php';
 
-$raiz = dirname(__DIR__);
-$rutaRed = $raiz . '/caminitos.geojson';
+$raiz = ROOT_PATH;
+$rutaRed = PUBLIC_DATA_PATH . '/caminitos.geojson';
 $entrada = $rutaRed;
 $salida = null;
 $aplicar = in_array('--apply', $argv, true);
@@ -187,7 +188,7 @@ if ($json === false) {
 
 $respaldo = null;
 if ($esRedActiva) {
-    $dirRespaldos = $raiz . '/PHP/data/backups/caminitos';
+    $dirRespaldos = BACKUPS_PATH . '/caminitos';
     if (!is_dir($dirRespaldos) && !@mkdir($dirRespaldos, 0775, true) && !is_dir($dirRespaldos)) {
         fwrite(STDERR, "No se pudo crear el directorio de respaldos.\n");
         exit(1);
@@ -225,7 +226,7 @@ echo 'Escrito: ' . basename($destino) . ' (' . count($features) . " features)\n"
 
 // Auditoría best-effort (mismo formato que el resto del proyecto).
 if ($esRedActiva) {
-    $rutaAuditoria = $raiz . '/PHP/data/audit-log.jsonl';
+    $rutaAuditoria = RUNTIME_PATH . '/audit-log.jsonl';
     if (is_dir(dirname($rutaAuditoria))) {
         $evento = [
             'event' => 'red_migrada_v2',

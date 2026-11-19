@@ -6,9 +6,9 @@ php.ini
 *secret*
 
 # Datos generados en tiempo de ejecución (persistencia JSON)
-PHP/data/
-PHP/data/*.tmp.*
-PHP/data/backups/
+database/runtime/
+database/runtime/*.tmp.*
+database/backups/
 
 # Bloqueos y escrituras temporales de los repositorios
 *.lock

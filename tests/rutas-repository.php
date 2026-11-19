@@ -3,7 +3,7 @@
 // PRUEBAS DEL REPOSITORIO DE RUTAS (16.4)
 // ==========================================
 // Verifica persistencia, fail-closed, respaldo, bloqueo, concurrencia y
-// migración de `PHP/data/rutas.json`. Todo se ejecuta en directorios
+// migración de `database/runtime/rutas.json`. Todo se ejecuta en directorios
 // temporales: no toca los datos reales.
 //
 // Uso: php tests/rutas-repository.php

@@ -36,7 +36,7 @@ $redAntes = Get-FileHash (Join-Path $raiz 'caminitos.geojson') -Algorithm SHA256
 # Las rutas administrativas son datos reales del usuario: la prueba exige que
 # no cambien, no que el archivo esté vacío.
 $rutasAntes = 0
-$archivoRutas = Join-Path $raiz 'PHP/data/rutas.json'
+$archivoRutas = Join-Path $raiz 'database/runtime/rutas.json'
 if (Test-Path $archivoRutas) {
     $documentoRutas = Get-Content $archivoRutas -Raw | ConvertFrom-Json
     if ($documentoRutas.rutas) {

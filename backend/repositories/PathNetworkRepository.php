@@ -5,7 +5,7 @@
 // Lectura, validación y escritura atómica de `caminitos.geojson`.
 //
 // Diferencias con BaseRepository:
-//  - La red vive en la raíz del proyecto, no en PHP/data/.
+//  - La red vive en el directorio de datos públicos, no en `database/`.
 //  - La lectura es fail-closed: un archivo corrupto o inválido lanza
 //    excepción (nunca devuelve una red vacía que oculte el problema).
 //  - La escritura respalda la versión anterior en `.bak` y verifica el

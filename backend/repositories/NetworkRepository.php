@@ -11,7 +11,7 @@
 //    sobrescriba.
 //  - Guardado con bloqueo exclusivo, comprobación de revisión DENTRO del
 //    bloqueo (409 si el cliente editó sobre una revisión vieja), respaldo en
-//    `PHP/data/backups/caminitos/`, archivo temporal y `rename` atómico.
+//    `database/backups/caminitos/`, archivo temporal y `rename` atómico.
 //
 // El archivo de datos sigue siendo `caminitos.geojson` en la raíz: es la
 // única fuente de verdad y el mapa público lo consume sin cambios.

@@ -85,7 +85,7 @@ $totalSegmentos = is_array($red) ? count($red['features'] ?? []) : 0;
         <h2>La red no se puede leer</h2>
         <p><?= htmlspecialchars($errorCarga) ?></p>
         <p>Si el archivo está en formato antiguo, ejecuta <code>php scripts/migrar_red_v2.php --apply</code>.
-           Si está corrupto, restaura el último respaldo de <code>PHP/data/backups/caminitos/</code>.</p>
+           Si está corrupto, restaura el último respaldo de <code>database/backups/caminitos/</code>.</p>
     </div>
 </div>
 <?php else: ?>

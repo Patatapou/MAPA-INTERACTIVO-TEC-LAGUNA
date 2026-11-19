@@ -1,6 +1,6 @@
 <?php
 // ==========================================
-// REPOSITORIO DE RUTAS (PHP/data/rutas.json)
+// REPOSITORIO DE RUTAS (database/runtime/rutas.json)
 // ==========================================
 // Persistencia de las rutas administrativas.
 //

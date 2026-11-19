@@ -162,13 +162,13 @@ try {
     Comprobar 'R-08' 'el número de segmentos no cambió' $total (@($despues.geojson.features).Count) ''
 
     # ---------- S-08: datos privados y respaldos fuera de HTTP ----------
-    $r = Llamar 'GET' "$base/PHP/data/users.json" $anonNav
-    Comprobar 'S-08' 'GET /PHP/data/users.json' 403 $r.code $r.body
+    $r = Llamar 'GET' "$base/database/runtime/users.json" $anonNav
+    Comprobar 'S-08' 'GET /database/runtime/users.json' 403 $r.code $r.body
 
-    $r = Llamar 'GET' "$base/PHP/data/backups/caminitos/" $anonNav
+    $r = Llamar 'GET' "$base/database/backups/caminitos/" $anonNav
     Comprobar 'S-08' 'GET respaldos de la red' 403 $r.code $r.body
 
-    $r = Llamar 'GET' "$base/caminitos.geojson.bak" $anonNav
+    $r = Llamar 'GET' "$base/DUMP/caminitos.geojson.bak" $anonNav
     Comprobar 'S-08' 'GET respaldo .bak de la red' 403 $r.code $r.body
 
     # ---------- S-09: errores sin trazas ----------

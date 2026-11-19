@@ -17,13 +17,15 @@
 //  - Un feature ya migrado conserva su `properties.id` (idempotencia).
 //  - El ID es inmutable: solo se genera al crear o dividir un segmento.
 //
-// El script NO usa el servidor web ni toca `PHP/data/`. Solo escribe
-// `caminitos.geojson` (y su respaldo `.bak`).
+// El script NO usa el servidor web ni escribe en la base de datos privada.
+// Solo escribe `caminitos.geojson` (y su respaldo `.bak`).
 
 declare(strict_types=1);
 
-$raiz = dirname(__DIR__);
-$rutaRed = $raiz . '/caminitos.geojson';
+require_once __DIR__ . '/../backend/bootstrap.php';
+
+$raiz = ROOT_PATH;
+$rutaRed = PUBLIC_DATA_PATH . '/caminitos.geojson';
 $dryRun = in_array('--dry-run', $argv, true);
 $rutaSalida = null;
 $rutaEntrada = $rutaRed;
@@ -839,7 +841,7 @@ if (!rename($temporal, $rutaRed)) {
 echo "Escrito: caminitos.geojson (" . count($features) . " features)\n";
 
 // Auditoría best-effort del evento de migración (apartado 12.6).
-$rutaAuditoria = $raiz . '/PHP/data/audit-log.jsonl';
+$rutaAuditoria = RUNTIME_PATH . '/audit-log.jsonl';
 if (is_dir(dirname($rutaAuditoria))) {
     $evento = [
         'event' => 'red_migrada',

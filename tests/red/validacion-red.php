@@ -7,7 +7,7 @@
 // asignación de IDs definitivos a los segmentos `tmp-`.
 //
 // Usa un repositorio temporal y una auditoría temporal: no toca la red real
-// ni `PHP/data/audit-log.jsonl`.
+// ni `database/runtime/audit-log.jsonl`.
 //
 // Uso: php tests/red/validacion-red.php
 

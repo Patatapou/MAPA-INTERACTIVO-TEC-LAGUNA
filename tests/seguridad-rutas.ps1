@@ -168,19 +168,19 @@ try {
     Comprobar 'S-05' 'la distancia se recalcula' $true ([double]$creada.ruta.distancia_m -gt 0) ("distancia=" + $creada.ruta.distancia_m)
 
     # ---------- S-06: auditoría ----------
-    $auditoria = Join-Path $raiz 'PHP/data/audit-log.jsonl'
+    $auditoria = Join-Path $raiz 'database/runtime/audit-log.jsonl'
     $evento = $null
     if (Test-Path $auditoria) {
         $evento = Select-String -Path $auditoria -Pattern ('"ruta_creada".*' + [regex]::Escape($idCreada)) | Select-Object -Last 1
     }
     Comprobar 'S-06' 'evento ruta_creada en audit-log' $true ($null -ne $evento) ''
 
-    # ---------- S-08: PHP/data no accesible por HTTP ----------
-    $r = Llamar 'GET' "$base/PHP/data/rutas.json" $anonNav
-    Comprobar 'S-08' 'GET /PHP/data/rutas.json' 403 $r.code $r.body
+    # ---------- S-08: datos privados no accesibles por HTTP ----------
+    $r = Llamar 'GET' "$base/database/runtime/rutas.json" $anonNav
+    Comprobar 'S-08' 'GET /database/runtime/rutas.json' 403 $r.code $r.body
 
-    $r = Llamar 'GET' "$base/PHP/data/users.json" $anonNav
-    Comprobar 'S-08' 'GET /PHP/data/users.json' 403 $r.code $r.body
+    $r = Llamar 'GET' "$base/database/runtime/users.json" $anonNav
+    Comprobar 'S-08' 'GET /database/runtime/users.json' 403 $r.code $r.body
 
     # ---------- S-09: errores sin trazas ni rutas de archivo ----------
     $r = Llamar 'POST' "$base/index.php?p=saveRuta" $ses @{

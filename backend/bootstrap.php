@@ -44,18 +44,29 @@ if (!defined('IMG_PATH')) {
 
 if (!defined('DATABASE_PATH')) {
     // Datos privados del sistema (usuarios, ajustes, auditoría, rutas).
-    // Etapa 3: pasará a `ROOT_PATH . '/database'`.
-    define('DATABASE_PATH', ROOT_PATH . '/PHP/data');
+    define('DATABASE_PATH', ROOT_PATH . '/database');
 }
 
 if (!defined('RUNTIME_PATH')) {
     // Archivos JSON de escritura en tiempo de ejecución.
-    // Etapa 3: `DATABASE_PATH . '/runtime'`.
-    define('RUNTIME_PATH', DATABASE_PATH);
+    define('RUNTIME_PATH', DATABASE_PATH . '/runtime');
 }
 
 if (!defined('BACKUPS_PATH')) {
     // Respaldos automáticos (red de caminos, rutas).
-    // Etapa 3: `DATABASE_PATH . '/backups'`.
     define('BACKUPS_PATH', DATABASE_PATH . '/backups');
+}
+
+// Fallar de forma visible: sin estas carpetas no hay datos privados y la
+// aplicación NO debe arrancar (nunca crear un users.json vacío en silencio).
+foreach ([RUNTIME_PATH, BACKUPS_PATH] as $directorioDatos) {
+    if (!is_dir($directorioDatos)) {
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, "Falta la carpeta de datos: {$directorioDatos}\n");
+            exit(1);
+        }
+
+        http_response_code(500);
+        exit("Falta la carpeta de datos: {$directorioDatos}");
+    }
 }
