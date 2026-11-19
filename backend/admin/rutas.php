@@ -3,7 +3,7 @@
 // GESTIÓN DE RUTAS — VISTA PRINCIPAL
 // ==========================================
 // Listado, filtros, detalle y eliminación de rutas administrativas.
-// Las acciones de alta y edición se delegan en PHP/admin/editar-ruta.php.
+// Las acciones de alta y edición se delegan en backend/admin/editar-ruta.php.
 //
 // Esta vista no modifica nada: solo consulta `getRutas` y `getRedCaminos`.
 // El borrado se hace con `deleteRuta` (POST + CSRF) desde el modal.

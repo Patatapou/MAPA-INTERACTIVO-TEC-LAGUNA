@@ -9,18 +9,19 @@
 // de estas constantes. Así, mover carpetas (reestructuración a
 // `backend/`, `frontend/`, `database/`) solo exige cambiar este archivo.
 //
-// En esta etapa (Etapa 1 del plan) las constantes apuntan a la estructura
-// ACTUAL del repositorio; las etapas siguientes solo ajustan sus valores.
+// En esta etapa (Etapa 2 del plan) el backend vive en `backend/` y el
+// document root sigue siendo la raíz; las etapas siguientes solo ajustan
+// los valores de `FRONTEND_PATH`, `PUBLIC_DATA_PATH`, `IMG_PATH` y
+// `DATABASE_PATH`.
 
 if (!defined('ROOT_PATH')) {
-    // Raíz del proyecto (donde viven `.git`, `PHP/`, `js/`, `css/`, ...).
+    // Raíz del proyecto (donde viven `.git`, `backend/`, `js/`, `css/`, ...).
     define('ROOT_PATH', dirname(__DIR__));
 }
 
 if (!defined('BACKEND_PATH')) {
-    // Código PHP privado (servicios, repositorios, autenticación, vistas).
-    // Etapa 2: pasará a `ROOT_PATH . '/backend'`.
-    define('BACKEND_PATH', ROOT_PATH . '/PHP');
+    // Código PHP privado (router, API, servicios, repositorios, vistas).
+    define('BACKEND_PATH', __DIR__);
 }
 
 if (!defined('FRONTEND_PATH')) {

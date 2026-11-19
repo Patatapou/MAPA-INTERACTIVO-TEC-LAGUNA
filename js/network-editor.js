@@ -1,7 +1,7 @@
 // ==========================================
 // EDITOR DE LA RED DE CAMINOS
 // ==========================================
-// Vista: `PHP/admin/editar-red.php` · estilos: `css/red-editor.css`
+// Vista: `backend/admin/editar-red.php` · estilos: `css/red-editor.css`
 // Análisis: `js/network-analysis.js` (E01–E08, W01–W06)
 //
 // Modos:

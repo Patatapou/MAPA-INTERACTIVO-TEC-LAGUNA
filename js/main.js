@@ -844,7 +844,7 @@ let isAdmin = false;
 
 async function checkAdminSession() {
     try {
-        const res = await fetch('check-session.php', {
+        const res = await fetch('index.php?p=check-session', {
             credentials: 'same-origin'
         });
         const data = await res.json();
@@ -917,7 +917,7 @@ async function initAdminButton() {
             const formData = new FormData(form);
 
             try {
-                const res = await fetch('send-suggestion.php', {
+                const res = await fetch('index.php?p=send-suggestion', {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin'

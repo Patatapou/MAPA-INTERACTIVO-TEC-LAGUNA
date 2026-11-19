@@ -402,8 +402,8 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | Campo | Valor |
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
-| Etapa en curso | Etapa 2 — Backend (Etapa 1 completada) |
-| Último commit de etapa | `406f103` (Etapa 0) · Etapa 1 pendiente de commit |
+| Etapa en curso | Etapa 3 — Base de datos privada (Etapas 0–2 completadas) |
+| Último commit de etapa | `47faf69` (Etapa 2) |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -426,19 +426,19 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 - Nota: los tests de huella del grafo fallan por el desfase preexistente descrito en «Incidencias abiertas».
 
 ### Etapa 2 — Backend
-- [ ] Crear `backend/`
-- [ ] Mover `PHP/{admin,auth,repositories,services}` → `backend/`
-- [ ] Mover `PHP/bootstrap.php` → `backend/bootstrap.php`
-- [ ] Mover endpoints de la raíz → `backend/api/` con nombres kebab-case
-- [ ] Mover endpoints de `PHP/admin/` → `backend/api/` (edificios, imágenes, rutas y red)
-- [ ] Extraer la lógica de `index.php` a `backend/router.php` y dejar `index.php` como *front controller* delgado
-- [ ] Añadir rutas públicas `check-session` y `send-suggestion`
-- [ ] Crear `backend/views/404.php` (P6)
-- [ ] Ajustar `BACKEND_PATH` y las rutas del router
-- [ ] Actualizar `js/main.js` (`check-session.php` y `send-suggestion.php` → `index.php?p=…`)
-- [ ] Actualizar los `require` de `tests/` a `backend/`
-- [ ] Verificar: `php -l`, pruebas PHP, humo 7.1
-- [ ] Commit de la etapa
+- [x] Crear `backend/`
+- [x] Mover `PHP/{admin,auth,repositories,services}` → `backend/`
+- [x] Mover `PHP/bootstrap.php` → `backend/bootstrap.php`
+- [x] Mover endpoints de la raíz → `backend/api/` con nombres kebab-case
+- [x] Mover endpoints de `PHP/admin/` → `backend/api/` (edificios, imágenes, rutas y red)
+- [x] Extraer la lógica de `index.php` a `backend/router.php` y dejar `index.php` como *front controller* delgado
+- [x] Añadir rutas públicas `check-session` y `send-suggestion`
+- [x] Crear `backend/views/404.php` (P6)
+- [x] Ajustar `BACKEND_PATH` y las rutas del router
+- [x] Actualizar `js/main.js` (`check-session.php` y `send-suggestion.php` → `index.php?p=…`)
+- [x] Actualizar los `require` de `tests/` a `backend/`
+- [x] Verificar: `php -l` (0 errores), 131 pruebas PHP OK, regresión general 24/24 y seguridad S-01…S-10 OK
+- [x] Commit de la etapa → `47faf69`
 
 ### Etapa 3 — Base de datos privada
 - [ ] Crear `DUMP/` y mover allí `PHP/public/`, `PHP_public_README.md`, `backend/admin/procesar.php` y los respaldos sueltos de la raíz
@@ -490,4 +490,5 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | Fecha | Etapa | Commit | Notas |
 |---|---|---|---|
 | 2026-11-18 | 0 | `406f103` | Rama creada y respaldo de `PHP/data/` verificado |
-| 2026-11-18 | 1 | — | `PHP/bootstrap.php` creado; rutas centralizadas; 131 pruebas PHP OK; humo OK |
+| 2026-11-18 | 1 | `bfced7f` | `PHP/bootstrap.php` creado; rutas centralizadas; 131 pruebas PHP OK; humo OK |
+| 2026-11-18 | 2 | `47faf69` | Backend en `backend/`; router y API kebab-case; tests y JS actualizados; regresión y seguridad OK |

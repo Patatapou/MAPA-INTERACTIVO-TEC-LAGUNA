@@ -76,7 +76,7 @@ $ses = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $login = Llamar 'GET' "$base/index.php?p=login" $ses
 $token = [regex]::Match($login.body, 'name="csrf_token" value="([^"]+)"').Groups[1].Value
 Llamar 'POST' "$base/index.php?p=login" $ses @{ csrf_token = $token; usuario = 'admin'; password = '123456' } | Out-Null
-$token = ((Llamar 'GET' "$base/check-session.php" $ses).body | ConvertFrom-Json).csrf_token
+$token = ((Llamar 'GET' "$base/index.php?p=check-session" $ses).body | ConvertFrom-Json).csrf_token
 
 $r = Llamar 'GET' "$base/index.php?p=editar-geometria&accion=nuevo" $ses
 Comprobar 'R-08 editor de geometría con sesión' 200 $r.code ''

@@ -2,7 +2,7 @@
 // PARIDAD JS ↔ PHP DEL GRAFO DE CAMINOS
 // ==========================================
 // Compara `buildGraph()` (js/pathfinding.js) con `NetworkGraph::construir()`
-// (PHP/services/NetworkGraph.php) sobre:
+// (backend/services/NetworkGraph.php) sobre:
 //   - la red real (`caminitos.geojson`), y
 //   - 200 redes aleatorias deterministas que ejercitan snapping, vértices
 //     compartidos y segmentos casi conectados.

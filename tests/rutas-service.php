@@ -10,10 +10,10 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/_pruebas.php';
-require_once __DIR__ . '/../PHP/repositories/RouteRepository.php';
-require_once __DIR__ . '/../PHP/repositories/AuditLogRepository.php';
-require_once __DIR__ . '/../PHP/services/PathNetworkService.php';
-require_once __DIR__ . '/../PHP/services/RouteService.php';
+require_once __DIR__ . '/../backend/repositories/RouteRepository.php';
+require_once __DIR__ . '/../backend/repositories/AuditLogRepository.php';
+require_once __DIR__ . '/../backend/services/PathNetworkService.php';
+require_once __DIR__ . '/../backend/services/RouteService.php';
 
 echo "=== Servicio de rutas ===\n";
 

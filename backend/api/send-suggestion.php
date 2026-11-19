@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 session_set_cookie_params(0, '/');
 session_start();
 
-require_once __DIR__ . '/PHP/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 require_once BACKEND_PATH . '/auth/csrf.php';
 require_once BACKEND_PATH . '/services/SuggestionService.php';
 

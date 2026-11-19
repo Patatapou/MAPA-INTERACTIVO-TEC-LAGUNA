@@ -9,7 +9,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../PHP/repositories/RouteRepository.php';
+require_once __DIR__ . '/../backend/repositories/RouteRepository.php';
 
 $dir = $argv[1] ?? '';
 $prefijo = $argv[2] ?? 'a';

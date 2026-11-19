@@ -1,7 +1,7 @@
 // ==========================================
 // ANÁLISIS TOPOLÓGICO DE LA RED DE CAMINOS
 // ==========================================
-// Solo lo carga el editor de red (`PHP/admin/editar-red.php`). No modifica
+// Solo lo carga el editor de red (`backend/admin/editar-red.php`). No modifica
 // `pathfinding.js`: reutiliza su `buildGraph()`, `findClosestNode()` y
 // `dijkstra()` y añade el análisis que necesita la validación en vivo
 // (E01–E08 / W01–W06 del plan de gestión de la red).

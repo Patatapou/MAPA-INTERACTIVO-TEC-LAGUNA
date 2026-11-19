@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../PHP/services/NetworkGraph.php';
+require_once __DIR__ . '/../backend/services/NetworkGraph.php';
 
 $raiz = dirname(__DIR__);
 $rutaRed = $raiz . '/caminitos.geojson';

@@ -79,7 +79,7 @@ try {
     $token = [regex]::Match($login.body, 'name="csrf_token" value="([^"]+)"').Groups[1].Value
     $entrada = Llamar 'POST' "$base/index.php?p=login" $ses @{ csrf_token = $token; usuario = 'admin'; password = '123456' }
     Comprobar 'S-00' 'login de administrador' 302 $entrada.code ''
-    $token = ((Llamar 'GET' "$base/check-session.php" $ses).body | ConvertFrom-Json).csrf_token
+    $token = ((Llamar 'GET' "$base/index.php?p=check-session" $ses).body | ConvertFrom-Json).csrf_token
 
     $red = (Llamar 'GET' "$base/index.php?p=getRedCaminos" $ses).body | ConvertFrom-Json
     $segmento = $red.segmentos[0]

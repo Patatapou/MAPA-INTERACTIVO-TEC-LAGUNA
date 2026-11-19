@@ -14,8 +14,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../_pruebas.php';
-require_once __DIR__ . '/../../PHP/services/NetworkService.php';
-require_once __DIR__ . '/../../PHP/services/NetworkGraph.php';
+require_once __DIR__ . '/../../backend/services/NetworkService.php';
+require_once __DIR__ . '/../../backend/services/NetworkGraph.php';
 
 echo "=== Validación de la red de caminos ===\n";
 

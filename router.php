@@ -46,6 +46,7 @@ $directoriosBloqueados = [
     '/php/auth',
     '/php/services',
     '/php/repositories',
+    '/backend',
     '/scripts',
     '/tests',
     '/docs',

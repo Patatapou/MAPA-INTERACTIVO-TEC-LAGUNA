@@ -16,7 +16,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../_pruebas.php';
-require_once __DIR__ . '/../../PHP/repositories/NetworkRepository.php';
+require_once __DIR__ . '/../../backend/repositories/NetworkRepository.php';
 
 echo "=== Integridad de la red de caminos ===\n";
 

@@ -19,7 +19,7 @@ function jsonError($code, $message) {
 }
 
 try {
-    require_once __DIR__ . '/PHP/bootstrap.php';
+    require_once __DIR__ . '/../bootstrap.php';
     require_once BACKEND_PATH . '/auth/auth_middleware.php';
     require_once BACKEND_PATH . '/auth/csrf.php';
     require_once BACKEND_PATH . '/services/BuildingService.php';

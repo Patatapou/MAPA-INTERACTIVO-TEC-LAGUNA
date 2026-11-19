@@ -2,7 +2,7 @@
 // ==========================================
 // ALTA Y EDICIÓN DE RUTAS
 // ==========================================
-// Vista cargada por PHP/admin/rutas.php cuando accion=nueva|editar.
+// Vista cargada por backend/admin/rutas.php cuando accion=nueva|editar.
 // Mapa a la izquierda (construcción de la cadena de segmentos) y formulario
 // de metadatos a la derecha.
 //

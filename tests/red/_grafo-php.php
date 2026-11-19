@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../PHP/services/NetworkGraph.php';
+require_once __DIR__ . '/../../backend/services/NetworkGraph.php';
 
 $contenido = stream_get_contents(STDIN);
 $peticion = $contenido !== false ? json_decode($contenido, true) : null;

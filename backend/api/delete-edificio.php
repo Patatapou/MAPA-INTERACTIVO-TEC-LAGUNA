@@ -5,7 +5,7 @@
 // Elimina un edificio (metadatos de datos.json y geometría de GeoTec.js).
 // Requiere autenticación de administrador y token CSRF.
 
-require_once __DIR__ . '/PHP/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 require_once BACKEND_PATH . '/auth/auth_middleware.php';
 require_once BACKEND_PATH . '/auth/csrf.php';
 require_once BACKEND_PATH . '/services/BuildingService.php';

@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="submit" class="button" value="Entrar">
                 </div>
                 <div class="group" style="text-align: center; margin-top: 20px;">
-                    <a href="../../index.html" class="button" style="background-color: #6c757d; text-decoration: none; display: inline-block; width: auto; padding: 10px 20px;">← Volver al mapa</a>
+                    <a href="index.html" class="button" style="background-color: #6c757d; text-decoration: none; display: inline-block; width: auto; padding: 10px 20px;">← Volver al mapa</a>
                 </div>
             </form>
         </div>

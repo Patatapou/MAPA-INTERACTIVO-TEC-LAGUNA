@@ -1,7 +1,7 @@
 <?php
 // Verifica si el usuario tiene sesión de administrador activa.
 // Devuelve JSON: { isAdmin: bool, csrf_token: string }
-require_once __DIR__ . '/PHP/bootstrap.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 header('Content-Type: application/json');
 session_set_cookie_params(0, '/');

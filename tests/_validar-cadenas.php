@@ -15,7 +15,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-require_once __DIR__ . '/../PHP/services/PathNetworkService.php';
+require_once __DIR__ . '/../backend/services/PathNetworkService.php';
 
 $archivo = $argv[1] ?? '';
 if ($archivo === '' || !is_file($archivo)) {
