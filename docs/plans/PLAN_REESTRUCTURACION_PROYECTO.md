@@ -403,7 +403,7 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
 | Etapa en curso | Etapa 5 — Limpieza legacy → `DUMP/` (Etapas 0–4 completadas) |
-| Último commit de etapa | `3795a06` (Etapa 3) · Etapa 4 pendiente de commit |
+| Último commit de etapa | `0d9ca27` (Etapa 4) |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -469,7 +469,7 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 - [x] Actualizar pruebas con las rutas nuevas y el nuevo *document root* (`regresion-general`, `rutas-*`, `grafo-huella`, `validar-cadenas`, `diagnostico-red`, `red/*`)
 - [x] Verificar humo 7.1 y seguridad 7.2 (403/302 en todo lo privado)
 - [x] Retirar los directorios vacíos `css/` y `js/` de la raíz
-- [x] Commit de la etapa → `—`
+- [x] Commit de la etapa → `0d9ca27`
 - Nota: `frontend/index.php` redirige a `index.html` cuando no hay `?p=`; `mapa.php`, `frontend/css/styles.css` y `styles.css` de la raíz quedan para la Etapa 5.
 - Nota: los 404 de teselas en el borde del encuadre (zoom 17, columna `x=27878`) son **preexistentes**: la carpeta de teselas de `HEAD` ya cubría solo 4 columnas.
 
@@ -497,4 +497,4 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | 2026-11-18 | 1 | `bfced7f` | `PHP/bootstrap.php` creado; rutas centralizadas; 131 pruebas PHP OK; humo OK |
 | 2026-11-18 | 2 | `0d1cbc4` | Backend en `backend/`; router y API kebab-case; tests y JS actualizados; regresión y seguridad OK |
 | 2026-11-18 | 3 | `3795a06` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
-| 2026-11-18 | 4 | `—` | `frontend/` como *document root* (HTML, `css/{public,admin,vendor}`, `js/{public,shared,admin,vendor}`, `img/`, `tiles/satelital/`, `data/`); `-t frontend` en servidor y pruebas; mapa, panel, editores y módulo de rutas verificados en el navegador |
+| 2026-11-18 | 4 | `0d9ca27` | `frontend/` como *document root* (HTML, `css/{public,admin,vendor}`, `js/{public,shared,admin,vendor}`, `img/`, `tiles/satelital/`, `data/`); `-t frontend` en servidor y pruebas; mapa, panel, editores y módulo de rutas verificados en el navegador |
