@@ -403,7 +403,7 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
 | Etapa en curso | Etapa 4 — Frontend y *document root* (Etapas 0–3 completadas) |
-| Último commit de etapa | `ef14616` (Etapa 3) |
+| Último commit de etapa | `3795a06` (Etapa 3) |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -450,7 +450,7 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 - [x] Actualizar `scripts/migrar_red_caminos.php` y `scripts/migrar_red_v2.php`
 - [x] Actualizar pruebas que leen `PHP/data/` (`seguridad-rutas.ps1`, `red/seguridad-red.ps1`, `regresion-general.ps1`) y `router.php` (bloqueo de `/database` y `/dump`)
 - [x] Verificar: login con el usuario real, sugerencia y auditoría en `database/runtime/`, 111 pruebas PHP, regresión general 24/24 y S-01…S-10 OK
-- [x] Commit de la etapa → `ef14616`
+- [x] Commit de la etapa → `3795a06`
 - Nota: `PHP/` queda solo con la carpeta vacía `PHP/data/`; se retira en la Etapa 5 (limpieza), no aquí.
 
 ### Etapa 4 — Frontend y *document root*
@@ -493,4 +493,4 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | 2026-11-18 | 0 | `406f103` | Rama creada y respaldo de `PHP/data/` verificado |
 | 2026-11-18 | 1 | `bfced7f` | `PHP/bootstrap.php` creado; rutas centralizadas; 131 pruebas PHP OK; humo OK |
 | 2026-11-18 | 2 | `0d1cbc4` | Backend en `backend/`; router y API kebab-case; tests y JS actualizados; regresión y seguridad OK |
-| 2026-11-18 | 3 | `ef14616` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
+| 2026-11-18 | 3 | `3795a06` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
