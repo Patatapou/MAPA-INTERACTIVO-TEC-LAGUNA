@@ -18,8 +18,8 @@ class BuildingService
     {
         $this->geometryRepo = new BuildingGeometryRepository();
         $this->auditRepo = new AuditLogRepository();
-        // datos.json está en la raíz del proyecto (dos niveles arriba de PHP/services/)
-        $this->datosJsonPath = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'datos.json';
+        // datos.json es un dato público consumido por el mapa.
+        $this->datosJsonPath = PUBLIC_DATA_PATH . DIRECTORY_SEPARATOR . 'datos.json';
     }
 
     /**

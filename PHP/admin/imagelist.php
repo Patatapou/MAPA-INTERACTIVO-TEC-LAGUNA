@@ -7,6 +7,7 @@
 
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 requerirAdmin();
 
@@ -24,7 +25,7 @@ if (!preg_match('/^[A-Za-z0-9_-]+$/', $folder)) {
     exit;
 }
 
-$dir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'img' . DIRECTORY_SEPARATOR . $folder;
+$dir = IMG_PATH . DIRECTORY_SEPARATOR . $folder;
 $images = [];
 
 if (is_dir($dir)) {

@@ -5,6 +5,8 @@
 // Proporciona operaciones comunes de lectura y escritura
 // con bloqueo de archivo (flock) y reemplazo atómico.
 
+require_once __DIR__ . '/../bootstrap.php';
+
 abstract class BaseRepository
 {
     protected string $dataDir;
@@ -12,7 +14,7 @@ abstract class BaseRepository
 
     public function __construct()
     {
-        $this->dataDir = __DIR__ . '/../data';
+        $this->dataDir = RUNTIME_PATH;
     }
 
     /**

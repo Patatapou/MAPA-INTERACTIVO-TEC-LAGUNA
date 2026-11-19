@@ -14,6 +14,8 @@
 // En el MVP este repositorio se usa en modo lectura. La escritura queda
 // preparada para la fase 6 (edición de red).
 
+require_once __DIR__ . '/../bootstrap.php';
+
 class PathNetworkRepository
 {
     private string $rutaRed;
@@ -30,7 +32,7 @@ class PathNetworkRepository
 
     public function __construct(?string $rutaRed = null)
     {
-        $this->rutaRed = $rutaRed ?? dirname(__DIR__, 2) . '/caminitos.geojson';
+        $this->rutaRed = $rutaRed ?? PUBLIC_DATA_PATH . '/caminitos.geojson';
     }
 
     public function rutaArchivo(): string

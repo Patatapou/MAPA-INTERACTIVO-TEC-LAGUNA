@@ -402,27 +402,28 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | Campo | Valor |
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
-| Etapa en curso | Etapa 0 — Preparación y línea base |
-| Último commit de etapa | — |
+| Etapa en curso | Etapa 2 — Backend (Etapa 1 completada) |
+| Último commit de etapa | `406f103` (Etapa 0) · Etapa 1 pendiente de commit |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
-| Incidencias abiertas | — |
+| Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
 ### Etapa 0 — Preparación y línea base
 - [x] Crear la rama `refactor/estructura`
 - [x] Copiar `PHP/data/` fuera del repositorio (respaldo en `%TEMP%\opencode\phpdata-backup-20261118-0130`)
 - [x] Ejecutar `php -l` sobre todos los `.php` (0 errores)
 - [x] Registrar la línea base de la lista de humo (7.1) sobre la estructura actual
-- [ ] Commit de la etapa (incluye este checklist)
+- [x] Commit de la etapa (incluye este checklist) → `406f103`
 
 ### Etapa 1 — Constantes de rutas (sin mover nada)
-- [ ] Crear `PHP/bootstrap.php` con `ROOT_PATH`, `BACKEND_PATH`, `FRONTEND_PATH`, `PUBLIC_DATA_PATH`, `IMG_PATH`, `DATABASE_PATH`, `RUNTIME_PATH`, `BACKUPS_PATH` apuntando a la ubicación actual
-- [ ] Hacer que cada punto de entrada cargue `bootstrap.php` (`index.php`, `saveGeometria.php`, `deleteEdificio.php`, `check-session.php`, `send-suggestion.php`, `save-red.php`)
-- [ ] Sustituir `BaseRepository`: `__DIR__ . '/../data'` → `RUNTIME_PATH`
-- [ ] Sustituir en servicios y repositorios: `BuildingService`, `BuildingGeometryRepository`, `PathNetworkRepository`, `NetworkRepository`, `RouteService`
-- [ ] Sustituir en vistas y endpoints: `panel.php`, `imagelist.php`, `saveEdificio.php`, `rutas.php`, `editar-ruta.php`, `editar-red.php`, `NetworkService`
-- [ ] Cambiar `require_once 'PHP/...'` por rutas absolutas basadas en `BACKEND_PATH`
-- [ ] Verificar: `php -l`, `grep "dirname(__DIR__" PHP *.php` sin resultados, pruebas PHP y humo
-- [ ] Commit de la etapa
+- [x] Crear `PHP/bootstrap.php` con `ROOT_PATH`, `BACKEND_PATH`, `FRONTEND_PATH`, `PUBLIC_DATA_PATH`, `IMG_PATH`, `DATABASE_PATH`, `RUNTIME_PATH`, `BACKUPS_PATH` apuntando a la ubicación actual
+- [x] Hacer que cada punto de entrada cargue `bootstrap.php` (`index.php`, `saveGeometria.php`, `deleteEdificio.php`, `check-session.php`, `send-suggestion.php`, `save-red.php`)
+- [x] Sustituir `BaseRepository`: `__DIR__ . '/../data'` → `RUNTIME_PATH`
+- [x] Sustituir en servicios y repositorios: `BuildingService`, `BuildingGeometryRepository`, `PathNetworkRepository`, `NetworkRepository`, `RouteService`
+- [x] Sustituir en vistas y endpoints: `panel.php`, `imagelist.php`, `saveEdificio.php`, `rutas.php`, `editar-ruta.php`, `editar-red.php`, `NetworkService`
+- [x] Cambiar `require_once 'PHP/...'` por rutas absolutas basadas en `BACKEND_PATH`
+- [x] Verificar: `php -l` (0 errores), `grep "dirname(__DIR__" PHP *.php` solo aparece en `PHP/bootstrap.php` (única fuente de `ROOT_PATH`), pruebas PHP 131/131 y humo HTTP correcto
+- [x] Commit de la etapa
+- Nota: los tests de huella del grafo fallan por el desfase preexistente descrito en «Incidencias abiertas».
 
 ### Etapa 2 — Backend
 - [ ] Crear `backend/`
@@ -488,4 +489,5 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 
 | Fecha | Etapa | Commit | Notas |
 |---|---|---|---|
-| 2026-11-18 | 0 | — | Rama creada y respaldo de `PHP/data/` verificado |
+| 2026-11-18 | 0 | `406f103` | Rama creada y respaldo de `PHP/data/` verificado |
+| 2026-11-18 | 1 | — | `PHP/bootstrap.php` creado; rutas centralizadas; 131 pruebas PHP OK; humo OK |

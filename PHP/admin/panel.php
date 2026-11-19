@@ -6,12 +6,13 @@ ini_set('display_errors', $debug ? '1' : '0');
 ini_set('display_startup_errors', $debug ? '1' : '0');
 error_reporting(E_ALL);
 
-require_once 'PHP/auth/auth_middleware.php';
+require_once __DIR__ . '/../bootstrap.php';
+require_once BACKEND_PATH . '/auth/auth_middleware.php';
 requerirAdmin();
 
 $csrfToken = generarTokenCSRF();
 
-$rutaJson = 'datos.json';
+$rutaJson = PUBLIC_DATA_PATH . '/datos.json';
 $datos = file_exists($rutaJson)
     ? json_decode(file_get_contents($rutaJson), true)
     : [];

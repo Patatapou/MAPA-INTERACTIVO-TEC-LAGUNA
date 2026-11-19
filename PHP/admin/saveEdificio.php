@@ -11,6 +11,7 @@
 //
 // La geometría NO se modifica aquí: se gestiona en saveGeometria.php.
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 require_once __DIR__ . '/../auth/csrf.php';
 require_once __DIR__ . '/../services/BuildingService.php';
@@ -38,8 +39,8 @@ if (!validarTokenCSRF($_POST['csrf_token'] ?? '')) {
     responderJson(403, ['success' => false, 'message' => 'Token CSRF inválido. Recarga la página e inténtalo de nuevo.']);
 }
 
-$raiz = dirname(__DIR__, 2);
-$imgDir = $raiz . DIRECTORY_SEPARATOR . 'img';
+$raiz = FRONTEND_PATH;
+$imgDir = IMG_PATH;
 
 $id = trim($_POST['id'] ?? '');
 $nombre = trim($_POST['nombre'] ?? '');

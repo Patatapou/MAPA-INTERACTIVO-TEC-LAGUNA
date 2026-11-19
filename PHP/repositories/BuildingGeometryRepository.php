@@ -22,8 +22,8 @@ class BuildingGeometryRepository extends BaseRepository
 
     public function __construct()
     {
-        // Desde PHP/repositories/, subir 2 niveles para llegar a la raíz del proyecto
-        $this->dataDir = dirname(__DIR__, 2);
+        // GeoTec.js es un dato público consumido por el mapa.
+        $this->dataDir = PUBLIC_DATA_PATH;
         $this->geoTecPath = $this->dataDir . DIRECTORY_SEPARATOR . $this->filename;
     }
 

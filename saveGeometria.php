@@ -19,9 +19,10 @@ function jsonError($code, $message) {
 }
 
 try {
-    require_once 'PHP/auth/auth_middleware.php';
-    require_once 'PHP/auth/csrf.php';
-    require_once 'PHP/services/BuildingService.php';
+    require_once __DIR__ . '/PHP/bootstrap.php';
+    require_once BACKEND_PATH . '/auth/auth_middleware.php';
+    require_once BACKEND_PATH . '/auth/csrf.php';
+    require_once BACKEND_PATH . '/services/BuildingService.php';
 
     requerirAdmin();
 

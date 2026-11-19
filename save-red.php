@@ -34,8 +34,9 @@ function redResponder(array $payload, int $codigo = 200): void
 }
 
 try {
-    require_once __DIR__ . '/PHP/auth/auth_middleware.php';
-    require_once __DIR__ . '/PHP/services/NetworkService.php';
+    require_once __DIR__ . '/PHP/bootstrap.php';
+    require_once BACKEND_PATH . '/auth/auth_middleware.php';
+    require_once BACKEND_PATH . '/services/NetworkService.php';
 
     requerirAdmin();
 

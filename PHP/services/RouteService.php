@@ -91,7 +91,7 @@ class RouteService
         $this->repo = $repo ?? new RouteRepository();
         $this->red = $red ?? new PathNetworkService();
         $this->auditoria = $auditoria ?? new AuditLogRepository();
-        $this->rutaDatos = $rutaDatos ?? dirname(__DIR__, 2) . '/datos.json';
+        $this->rutaDatos = $rutaDatos ?? PUBLIC_DATA_PATH . '/datos.json';
         $this->config = array_merge($this->configPorDefecto(), $this->configDesdeSettings(), $config ?? []);
     }
 
@@ -646,7 +646,7 @@ class RouteService
 
     private function configDesdeSettings(): array
     {
-        $ruta = dirname(__DIR__) . '/data/settings.json';
+        $ruta = RUNTIME_PATH . '/settings.json';
         if (!file_exists($ruta)) {
             return [];
         }

@@ -53,7 +53,7 @@ class NetworkRepository extends PathNetworkRepository
     {
         parent::__construct($rutaRed);
         $this->dirRespaldos = $dirRespaldos
-            ?? dirname(__DIR__, 2) . '/PHP/data/backups/caminitos';
+            ?? BACKUPS_PATH . '/caminitos';
     }
 
     public function dirRespaldos(): string

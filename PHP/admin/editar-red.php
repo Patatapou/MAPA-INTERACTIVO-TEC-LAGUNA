@@ -9,6 +9,7 @@
 // La vista solo pinta; toda la validación de guardado ocurre en
 // `save-red.php` / `NetworkService` (E01–E08, W01–W06).
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 require_once __DIR__ . '/../services/NetworkService.php';
 
@@ -36,7 +37,7 @@ try {
     $errorCarga = $e->getMessage();
 }
 
-$rutaDatos = dirname(__DIR__, 2) . '/datos.json';
+$rutaDatos = PUBLIC_DATA_PATH . '/datos.json';
 if (file_exists($rutaDatos)) {
     $contenidoDatos = file_get_contents($rutaDatos);
     $decodificado = $contenidoDatos !== false ? json_decode($contenidoDatos, true) : null;

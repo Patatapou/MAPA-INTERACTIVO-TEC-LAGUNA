@@ -9,6 +9,7 @@
 // El servidor es la autoridad: aquí solo se recogen `[{id, sentido}]` y los
 // metadatos. La geometría se reconstruye en `saveRuta`.
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 requerirAdmin();
 
@@ -24,7 +25,7 @@ $csrfToken = generarTokenCSRF();
 
 // Nombres de edificios y accesos para los selectores de origen y destino.
 $datosEdificios = [];
-$rutaDatos = dirname(__DIR__, 2) . '/datos.json';
+$rutaDatos = PUBLIC_DATA_PATH . '/datos.json';
 if (file_exists($rutaDatos)) {
     $contenidoDatos = file_get_contents($rutaDatos);
     $decodificado = $contenidoDatos !== false ? json_decode($contenidoDatos, true) : null;
@@ -43,7 +44,7 @@ $configRutas = [
     'max_segmentos_por_ruta' => 500,
     'max_salto_enlace_m' => 80,
 ];
-$rutaSettings = dirname(__DIR__) . '/data/settings.json';
+$rutaSettings = RUNTIME_PATH . '/settings.json';
 if (file_exists($rutaSettings)) {
     $contenidoSettings = file_get_contents($rutaSettings);
     $settings = $contenidoSettings !== false ? json_decode($contenidoSettings, true) : null;

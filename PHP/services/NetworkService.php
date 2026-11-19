@@ -119,8 +119,7 @@ class NetworkService
             return $this->paresReferenciaCache;
         }
 
-        $raiz = dirname(__DIR__, 2);
-        $rutaDatos = $raiz . '/datos.json';
+        $rutaDatos = PUBLIC_DATA_PATH . '/datos.json';
         $datos = [];
         if (file_exists($rutaDatos)) {
             $contenido = file_get_contents($rutaDatos);

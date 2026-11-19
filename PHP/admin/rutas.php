@@ -8,6 +8,7 @@
 // Esta vista no modifica nada: solo consulta `getRutas` y `getRedCaminos`.
 // El borrado se hace con `deleteRuta` (POST + CSRF) desde el modal.
 
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 requerirAdmin();
 
@@ -29,7 +30,7 @@ if ($accion === 'ver' && isset($_GET['id']) && preg_match('/^ruta-[a-f0-9]{8}$/'
 // Nombres de edificios y accesos para el listado y el detalle.
 // Si datos.json falta o está corrupto, la vista sigue funcionando sin nombres.
 $datosEdificios = [];
-$rutaDatos = dirname(__DIR__, 2) . '/datos.json';
+$rutaDatos = PUBLIC_DATA_PATH . '/datos.json';
 if (file_exists($rutaDatos)) {
     $contenidoDatos = file_get_contents($rutaDatos);
     $decodificado = $contenidoDatos !== false ? json_decode($contenidoDatos, true) : null;
@@ -49,7 +50,7 @@ $configRutas = [
     'max_segmentos_por_ruta' => 500,
     'max_salto_enlace_m' => 80,
 ];
-$rutaSettings = dirname(__DIR__) . '/data/settings.json';
+$rutaSettings = RUNTIME_PATH . '/settings.json';
 if (file_exists($rutaSettings)) {
     $contenidoSettings = file_get_contents($rutaSettings);
     $settings = $contenidoSettings !== false ? json_decode($contenidoSettings, true) : null;
