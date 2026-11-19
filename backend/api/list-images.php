@@ -2,8 +2,8 @@
 // ==========================================
 // LISTAR IMÁGENES DE UN EDIFICIO
 // ==========================================
-// Devuelve las imágenes de img/<folder>/ (raíz del proyecto).
-// La carpeta PHP/public está obsoleta y no se usa.
+// Devuelve las imágenes de `IMG_PATH/<folder>/` (frontend/img/<id>/).
+// La carpeta `PHP/public` (hoy en `DUMP/`) está obsoleta y no se usa.
 
 header('Content-Type: application/json');
 

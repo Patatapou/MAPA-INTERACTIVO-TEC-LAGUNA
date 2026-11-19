@@ -402,8 +402,8 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | Campo | Valor |
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
-| Etapa en curso | Etapa 5 — Limpieza legacy → `DUMP/` (Etapas 0–4 completadas) |
-| Último commit de etapa | `0d9ca27` (Etapa 4) |
+| Etapa en curso | Etapa 7 — Documentación (Etapas 0–5 completadas; Etapa 6 absorbida por la 4) |
+| Último commit de etapa | `0d9ca27` (Etapa 4) · Etapa 5 pendiente de commit |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -474,10 +474,13 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 - Nota: los 404 de teselas en el borde del encuadre (zoom 17, columna `x=27878`) son **preexistentes**: la carpeta de teselas de `HEAD` ya cubría solo 4 columnas.
 
 ### Etapa 5 — Limpieza legacy → `DUMP/`
-- [ ] Mover `mapa.php` y `css/styles.css` a `DUMP/` (la raíz pasa a redirigir a `index.html`)
-- [ ] Comprobar que no queda ninguna referencia a `PHP/public`, `procesar.php` ni `mapa.php`
-- [ ] Verificar humo 7.1
-- [ ] Commit de la etapa
+- [x] Mover `mapa.php` y `css/styles.css` a `DUMP/` (la raíz ya redirige a `index.html`)
+- [x] Comprobar que no queda ninguna referencia a `PHP/public`, `procesar.php` ni `mapa.php` en código (solo comentarios actualizados)
+- [x] Retirar la carpeta vacía `PHP/` y el bloqueo huérfano `caminitos.geojson.lock` de la raíz
+- [x] Verificar humo 7.1 (PHP 111/111, regresión 24/24, S-01…S-10 y red TODO OK)
+- [x] Commit de la etapa
+- Nota: `mapa.php` → `DUMP/mapa.php`; `frontend/css/styles.css` → `DUMP/frontend-legacy/css/styles.css`.
+- Nota: `/` y `/index.php` responden `302 → index.html`; una ruta inexistente con extensión (`.js`, `.css`) da 404, y las `.php` inexistentes caen en el fallback del servidor embebido y redirigen a `index.html`.
 
 ### Etapa 6 — Teselas con nombre limpio
 - [x] Absorbida por la Etapa 4 (`frontend/tiles/satelital/`, sin espacios ni doble barra)
@@ -498,3 +501,4 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | 2026-11-18 | 2 | `0d1cbc4` | Backend en `backend/`; router y API kebab-case; tests y JS actualizados; regresión y seguridad OK |
 | 2026-11-18 | 3 | `3795a06` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
 | 2026-11-18 | 4 | `0d9ca27` | `frontend/` como *document root* (HTML, `css/{public,admin,vendor}`, `js/{public,shared,admin,vendor}`, `img/`, `tiles/satelital/`, `data/`); `-t frontend` en servidor y pruebas; mapa, panel, editores y módulo de rutas verificados en el navegador |
+| 2026-11-18 | 5 | `—` | `mapa.php` y `css/styles.css` movidos a `DUMP/`; fuera la carpeta vacía `PHP/` y el lock huérfano; sin referencias legacy en código; humo y seguridad en verde |

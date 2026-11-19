@@ -4,12 +4,12 @@
 // ==========================================
 // Actualiza nombre, descripción, aulas e imágenes de un edificio existente.
 //
-// IMPORTANTE: la carpeta PHP/public está obsoleta. Este endpoint trabaja
-// SIEMPRE contra los archivos de la raíz del proyecto:
-//   - datos.json (metadatos)
-//   - img/<id>/ (imágenes)
+// IMPORTANTE: la carpeta `PHP/public` (hoy en `DUMP/`) está obsoleta. Este
+// endpoint trabaja SIEMPRE contra las rutas del bootstrap:
+//   - `PUBLIC_DATA_PATH/datos.json` (metadatos)
+//   - `IMG_PATH/<id>/` (imágenes)
 //
-// La geometría NO se modifica aquí: se gestiona en saveGeometria.php.
+// La geometría NO se modifica aquí: se gestiona en `save-geometria.php`.
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';

@@ -18,7 +18,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once BACKEND_PATH . '/auth/auth_middleware.php';
 
 // Sin `?p=` la aplicación no tiene página propia: el mapa es `index.html`.
-// (Antes se servía `mapa.php`, hoy legacy; ver Etapa 5 del plan.)
+// (El antiguo `mapa.php` es legacy y ya está en `DUMP/`.)
 if (!isset($_GET['p'])) {
     header('Location: index.html', true, 302);
     exit;
