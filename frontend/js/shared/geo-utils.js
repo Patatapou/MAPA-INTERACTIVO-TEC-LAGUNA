@@ -6,7 +6,8 @@
 // cargado antes por casualidad.
 //
 // Orden de carga en el mapa público:
-//   js/geo-utils.js → js/beacons-simulation.js → js/pathfinding.js → js/main.js
+//   js/shared/geo-utils.js → js/public/beacons-simulation.js →
+//   js/shared/pathfinding.js → js/public/main.js
 
 // ---------- Distancia en metros (Fórmula de Haversine) ----------
 function distanciaMetros(lat1, lng1, lat2, lng2) {

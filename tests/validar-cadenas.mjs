@@ -71,7 +71,7 @@ function mismaPosicion(claveA, claveB) {
 // ---------- Índice de la red ----------
 
 function indiceRed() {
-    const ruta = path.join(RAIZ, 'caminitos.geojson');
+    const ruta = path.join(RAIZ, 'frontend', 'data', 'caminitos.geojson');
     const geojson = JSON.parse(fs.readFileSync(ruta, 'utf8'));
     const indice = new Map();
 

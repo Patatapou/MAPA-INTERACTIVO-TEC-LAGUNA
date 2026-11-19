@@ -28,15 +28,15 @@ const RAIZ = process.cwd();
 const leer = (rel) => fs.readFileSync(`${RAIZ}/${rel}`, 'utf8');
 
 // Cargar utilidades existentes en el contexto global (igual que el navegador).
-vm.runInThisContext(leer('js/geo-utils.js'));
-vm.runInThisContext(leer('js/beacons-simulation.js'));
-vm.runInThisContext(leer('js/pathfinding.js'));
+vm.runInThisContext(leer('frontend/js/shared/geo-utils.js'));
+vm.runInThisContext(leer('frontend/js/public/beacons-simulation.js'));
+vm.runInThisContext(leer('frontend/js/shared/pathfinding.js'));
 
 // GeoTec.js declara `var datosTec = {...};`
-vm.runInThisContext(leer('GeoTec.js'));
+vm.runInThisContext(leer('frontend/data/GeoTec.js'));
 
-const caminitos = JSON.parse(leer('caminitos.geojson'));
-const datos = JSON.parse(leer('datos.json'));
+const caminitos = JSON.parse(leer('frontend/data/caminitos.geojson'));
+const datos = JSON.parse(leer('frontend/data/datos.json'));
 
 const LINEA_BASE = {
     nodos: 241,

@@ -18,7 +18,7 @@ require_once __DIR__ . '/../backend/services/RouteService.php';
 echo "=== Servicio de rutas ===\n";
 
 $raiz = dirname(__DIR__);
-$rutaDatos = $raiz . '/datos.json';
+$rutaDatos = $raiz . '/frontend/data/datos.json';
 
 // ---------- Contexto compartido ----------
 
@@ -118,7 +118,7 @@ function nuevoServicio(string $prefijo, ?string $rutaDatos = null): array
         $repo,
         new PathNetworkService(),
         $auditoria,
-        $rutaDatos ?? (dirname(__DIR__) . '/datos.json')
+        $rutaDatos ?? (dirname(__DIR__) . '/frontend/data/datos.json')
     );
 
     return ['servicio' => $servicio, 'repo' => $repo, 'dir' => $dir, 'dirAudit' => $dirAudit];

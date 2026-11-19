@@ -9,7 +9,7 @@
         integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
-    <script src="GeoTec.js"></script>
+    <script src="data/GeoTec.js"></script>
     <style type="text/css">
         body {
             margin: 0;
@@ -23,7 +23,7 @@
             height: 100%;
         }
     </style>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/public.css">
     <link rel="icon" type="image/x-icon" href="img/logo-tecnm.png">
 </head>
 
@@ -86,11 +86,11 @@
     </div>
 </div>
 
-    <!-- Scripts Modulares -->
-    <script src="js/geo-utils.js"></script>
-    <script src="js/beacons-simulation.js"></script>
-    <script src="js/pathfinding.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Scripts Modulares (orden: shared → public) -->
+    <script src="js/shared/geo-utils.js"></script>
+    <script src="js/public/beacons-simulation.js"></script>
+    <script src="js/shared/pathfinding.js"></script>
+    <script src="js/public/main.js"></script>
 </body>
 
 </html>;

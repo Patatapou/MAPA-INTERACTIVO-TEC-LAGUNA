@@ -19,5 +19,7 @@ Write-Host ""
 Write-Host "Protección: router.php bloquea backend, database, DUMP, scripts, tests y" -ForegroundColor DarkGray
 Write-Host "respaldos/logs (.bak, .jsonl, .log). Solo para desarrollo local." -ForegroundColor DarkGray
 Write-Host ""
+Write-Host "Document root: frontend/ (backend/ y database/ no se sirven por HTTP)" -ForegroundColor DarkGray
+Write-Host ""
 
-php -S "$host`:$port" router.php 2> server.err
+php -S "$host`:$port" -t frontend router.php 2> server.err

@@ -10,7 +10,7 @@ var map = L.map('map', { attributionControl: false }).setView([25.5324, -103.436
 L.control.attribution({ prefix: false }).addTo(map);
 
 // Capa satelital local
-var tilesource_layer = L.tileLayer('Teselas ITL Satelital//{z}/{x}/{y}.jpg', {
+var tilesource_layer = L.tileLayer('tiles/satelital/{z}/{x}/{y}.jpg', {
     minZoom: 15,
     maxZoom: 19,
     tms: false,
@@ -63,7 +63,7 @@ const beaconsData = [
 // ==========================================
 
 // 1. Cargar metadatos de los edificios
-fetch('datos.json')
+fetch('data/datos.json')
     .then(response => response.json())
     .then(data => {
         infoEdificios = data;
@@ -117,7 +117,7 @@ L.geoJSON(datosTec, {
 }).addTo(map);
 
 // 3. Cargar caminos y construir el grafo para Dijkstra
-fetch('caminitos.geojson')
+fetch('data/caminitos.geojson')
     .then(resp => resp.json())
     .then(data => {
         // Dibujar caminos sutiles en negro (transparente para no interferir con la visualización de edificios)

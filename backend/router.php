@@ -9,13 +9,22 @@
 // Rutas protegidas: el resto; se valida la sesión ANTES de incluir el archivo.
 // Los endpoints vuelven a comprobar la sesión por sí mismos (defensa en
 // profundidad si se accediera al archivo directamente).
+//
+// `frontend/` es el document root: `index.html` (mapa) se sirve directamente.
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 require_once BACKEND_PATH . '/auth/auth_middleware.php';
 
-$pagina = isset($_GET['p']) ? (string) $_GET['p'] : 'mapa';
+// Sin `?p=` la aplicación no tiene página propia: el mapa es `index.html`.
+// (Antes se servía `mapa.php`, hoy legacy; ver Etapa 5 del plan.)
+if (!isset($_GET['p'])) {
+    header('Location: index.html', true, 302);
+    exit;
+}
+
+$pagina = (string) $_GET['p'];
 
 /**
  * Mapa de rutas: clave de `?p=` → archivo + si exige sesión de administrador.
@@ -24,7 +33,6 @@ $pagina = isset($_GET['p']) ? (string) $_GET['p'] : 'mapa';
  */
 $rutas = [
     // Públicas
-    'mapa'            => ['archivo' => ROOT_PATH . '/mapa.php', 'auth' => false],
     'login'           => ['archivo' => BACKEND_PATH . '/admin/login.php', 'auth' => false],
     'check-session'   => ['archivo' => BACKEND_PATH . '/api/check-session.php', 'auth' => false],
     'send-suggestion' => ['archivo' => BACKEND_PATH . '/api/send-suggestion.php', 'auth' => false],

@@ -7,7 +7,8 @@
 // (E01–E08 / W01–W06 del plan de gestión de la red).
 //
 // Todo se prefija con `red` para no chocar con las funciones del mapa público.
-// Requiere `js/geo-utils.js` (define `distanciaMetros`) y `js/pathfinding.js`.
+// Requiere `js/shared/geo-utils.js` (define `distanciaMetros`) y
+// `js/shared/pathfinding.js`.
 //
 // El cliente solo orienta al administrador: el servidor revalida todo con
 // `NetworkService` antes de escribir. Las mismas reglas se aplican aquí para
@@ -203,7 +204,7 @@
      */
     function redGrafo(geojson) {
         if (typeof buildGraph !== 'function') {
-            throw new Error('Falta js/pathfinding.js: no se puede construir el grafo de la red.');
+            throw new Error('Falta js/shared/pathfinding.js: no se puede construir el grafo de la red.');
         }
         return buildGraph(geojson);
     }
@@ -360,7 +361,7 @@
                 return;
             }
             if (typeof findClosestNode !== 'function') {
-                throw new Error('Falta js/pathfinding.js: no se puede comprobar la alcanzabilidad.');
+                throw new Error('Falta js/shared/pathfinding.js: no se puede comprobar la alcanzabilidad.');
             }
 
             var inicio = cercano(Number(par.origen.lat), Number(par.origen.lng));

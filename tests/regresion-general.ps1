@@ -29,9 +29,9 @@ function Comprobar($nombre, $esperado, $obtenido, $detalle) {
     $resultados.Add("$marca $nombre -> esperado $esperado, obtenido $obtenido | $resumen")
 }
 
-$datosAntes = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256
-$geoTecAntes = Get-FileHash (Join-Path $raiz 'GeoTec.js') -Algorithm SHA256
-$redAntes = Get-FileHash (Join-Path $raiz 'caminitos.geojson') -Algorithm SHA256
+$datosAntes = Get-FileHash (Join-Path $raiz 'frontend/data/datos.json') -Algorithm SHA256
+$geoTecAntes = Get-FileHash (Join-Path $raiz 'frontend/data/GeoTec.js') -Algorithm SHA256
+$redAntes = Get-FileHash (Join-Path $raiz 'frontend/data/caminitos.geojson') -Algorithm SHA256
 
 # Las rutas administrativas son datos reales del usuario: la prueba exige que
 # no cambien, no que el archivo esté vacío.
@@ -49,19 +49,19 @@ $anon = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $r = Llamar 'GET' "$base/index.html" $anon
 Comprobar 'R-01 index.html responde 200' 200 $r.code ''
 Comprobar 'R-02 index.html carga Leaflet' $true ($r.body -match 'leaflet@1\.9\.4') ''
-Comprobar 'R-03 index.html carga el router del mapa' $true ($r.body -match 'js/main\.js') ''
+Comprobar 'R-03 index.html carga el router del mapa' $true ($r.body -match 'js/public/main\.js') ''
 Comprobar 'R-04 index.html conserva el botón de acceso admin' $true ($r.body -match 'btn-admin|admin') ''
 
-foreach ($recurso in @('datos.json', 'GeoTec.js', 'caminitos.geojson', 'js/main.js', 'js/pathfinding.js', 'js/beacons-simulation.js')) {
+foreach ($recurso in @('data/datos.json', 'data/GeoTec.js', 'data/caminitos.geojson', 'js/public/main.js', 'js/shared/pathfinding.js', 'js/public/beacons-simulation.js')) {
     $r = Llamar 'GET' "$base/$recurso" $anon
     Comprobar "R-05 $recurso responde 200" 200 $r.code ''
 }
 
 # ---------- Datos intactos ----------
-$datos = Get-Content (Join-Path $raiz 'datos.json') -Raw | ConvertFrom-Json
+$datos = Get-Content (Join-Path $raiz 'frontend/data/datos.json') -Raw | ConvertFrom-Json
 $entradas = @($datos.PSObject.Properties).Count
 Comprobar 'R-06 datos.json conserva sus entradas' 58 $entradas ''
-$geo = Get-Content (Join-Path $raiz 'caminitos.geojson') -Raw | ConvertFrom-Json
+$geo = Get-Content (Join-Path $raiz 'frontend/data/caminitos.geojson') -Raw | ConvertFrom-Json
 # La red es editable desde el panel: el número de segmentos puede cambiar de
 # forma legítima. Lo que la regresión debe garantizar es que el archivo siga en
 # formato v2, con IDs únicos y sin modificarse durante la propia prueba.
@@ -99,9 +99,9 @@ Comprobar 'R-13 getRutas responde 200' 200 $r.code ''
 Comprobar 'R-14 las rutas existentes no cambian' $rutasAntes $json.total ''
 
 # ---------- Los datos no cambiaron ----------
-$datosDespues = Get-FileHash (Join-Path $raiz 'datos.json') -Algorithm SHA256
-$geoTecDespues = Get-FileHash (Join-Path $raiz 'GeoTec.js') -Algorithm SHA256
-$redDespues = Get-FileHash (Join-Path $raiz 'caminitos.geojson') -Algorithm SHA256
+$datosDespues = Get-FileHash (Join-Path $raiz 'frontend/data/datos.json') -Algorithm SHA256
+$geoTecDespues = Get-FileHash (Join-Path $raiz 'frontend/data/GeoTec.js') -Algorithm SHA256
+$redDespues = Get-FileHash (Join-Path $raiz 'frontend/data/caminitos.geojson') -Algorithm SHA256
 Comprobar 'R-15 datos.json sin cambios' $datosAntes.Hash $datosDespues.Hash ''
 Comprobar 'R-16 GeoTec.js sin cambios' $geoTecAntes.Hash $geoTecDespues.Hash ''
 Comprobar 'R-17 caminitos.geojson sin cambios' $redAntes.Hash $redDespues.Hash ''

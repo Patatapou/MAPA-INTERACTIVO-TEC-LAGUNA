@@ -60,7 +60,7 @@ $csrfToken = generarTokenCSRF();
     integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
 <!-- Leaflet-Geoman vendorizado localmente (no depende de CDN) -->
 <link rel="stylesheet" href="css/vendor/leaflet-geoman/leaflet-geoman.css">
-<link rel="stylesheet" href="css/editor.css">
+<link rel="stylesheet" href="css/admin/editor.css">
 <link rel="icon" type="image/x-icon" href="img/logo-tecnm.png">
 </head>
 <body>
@@ -156,7 +156,7 @@ $csrfToken = generarTokenCSRF();
     // Todas las geometrías existentes (solo lectura, como referencia visual)
     window.EDITOR_GEOMETRIAS_EXISTENTES = <?= json_encode($geometriasExistentes, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="js/editor.js"></script>
+<script src="js/admin/editor.js"></script>
 
 </body>
 </html>

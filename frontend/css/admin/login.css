@@ -14,7 +14,7 @@ body {
     max-width: 525px;
     min-height: 520px; /* Ajustado al contenido actual */
     position: relative;
-    background: url('../img/login.jpg') no-repeat center;
+    background: url('../../img/login.jpg') no-repeat center;
     background-size: 150%;
     box-shadow: 0 12px 15px 0 rgba(0,0,0,.24), 0 17px 50px 0 rgba(0,0,0,.19);
 }

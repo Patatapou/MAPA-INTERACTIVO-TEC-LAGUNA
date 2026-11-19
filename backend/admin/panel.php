@@ -41,7 +41,7 @@ if (isset($_GET['editar']) && isset($datos[$_GET['editar']])) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Panel Admin - ITL Laguna</title>
 <link href="https://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet">
-<link rel="stylesheet" href="css/panel.css">
+<link rel="stylesheet" href="css/admin/panel.css">
 </head>
 <body>
 

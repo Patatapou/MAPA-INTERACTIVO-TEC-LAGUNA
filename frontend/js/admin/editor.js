@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     L.control.attribution({ prefix: false }).addTo(map);
 
-    L.tileLayer('Teselas ITL Satelital//{z}/{x}/{y}.jpg', {
+    L.tileLayer('tiles/satelital/{z}/{x}/{y}.jpg', {
         minZoom: 15,
         maxZoom: 19,
         tms: false,

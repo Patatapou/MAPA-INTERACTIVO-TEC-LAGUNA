@@ -149,7 +149,7 @@ try {
     $red = new PathNetworkService();
     $indice = $red->indice();
     $segmento = (string) array_key_first($indice);
-    $datosReales = json_decode((string) file_get_contents(__DIR__ . '/../datos.json'), true);
+    $datosReales = json_decode((string) file_get_contents(__DIR__ . '/../frontend/data/datos.json'), true);
     $referenciaEdificio = '';
     foreach ((array) $datosReales as $clave => $registro) {
         if (($registro['tipo'] ?? 'edificio') !== 'acceso') {
@@ -170,7 +170,7 @@ try {
         $repo,
         $red,
         $auditoria,
-        __DIR__ . '/../datos.json'
+        __DIR__ . '/../frontend/data/datos.json'
     );
 
     $creada = $servicio->guardar([

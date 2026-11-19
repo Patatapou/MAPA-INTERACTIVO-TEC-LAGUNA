@@ -22,8 +22,8 @@ const RAIZ = process.cwd();
 const leer = (rel) => fs.readFileSync(path.join(RAIZ, rel), 'utf8');
 
 // Mismo orden que el navegador: utilidades → pathfinding.
-vm.runInThisContext(leer('js/geo-utils.js'));
-vm.runInThisContext(leer('js/pathfinding.js'));
+vm.runInThisContext(leer('frontend/js/shared/geo-utils.js'));
+vm.runInThisContext(leer('frontend/js/shared/pathfinding.js'));
 
 const rapido = process.argv.includes('--rapido');
 const CANTIDAD_ALEATORIAS = rapido ? 25 : 200;
@@ -186,7 +186,7 @@ function comparar(indice, js, php) {
 
 // ---------- Ejecución ----------
 
-const redReal = JSON.parse(leer('caminitos.geojson'));
+const redReal = JSON.parse(leer('frontend/data/caminitos.geojson'));
 const redes = [redReal];
 for (let i = 0; i < CANTIDAD_ALEATORIAS; i++) {
     redes.push(redAleatoria(0x9e3779b9 + i * 2654435761));

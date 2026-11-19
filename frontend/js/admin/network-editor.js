@@ -1,8 +1,8 @@
 // ==========================================
 // EDITOR DE LA RED DE CAMINOS
 // ==========================================
-// Vista: `backend/admin/editar-red.php` · estilos: `css/red-editor.css`
-// Análisis: `js/network-analysis.js` (E01–E08, W01–W06)
+// Vista: `backend/admin/editar-red.php` · estilos: `css/admin/red-editor.css`
+// Análisis: `js/admin/network-analysis.js` (E01–E08, W01–W06)
 //
 // Modos:
 //   consultar → seleccionar y ver detalle
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     L.control.attribution({ prefix: false }).addTo(map);
 
-    L.tileLayer('Teselas ITL Satelital//{z}/{x}/{y}.jpg', {
+    L.tileLayer('tiles/satelital/{z}/{x}/{y}.jpg', {
         minZoom: 15,
         maxZoom: 19,
         tms: false,

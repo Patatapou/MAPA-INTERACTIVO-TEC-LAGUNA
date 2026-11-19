@@ -9,13 +9,13 @@
 // de estas constantes. Así, mover carpetas (reestructuración a
 // `backend/`, `frontend/`, `database/`) solo exige cambiar este archivo.
 //
-// En esta etapa (Etapa 2 del plan) el backend vive en `backend/` y el
-// document root sigue siendo la raíz; las etapas siguientes solo ajustan
-// los valores de `FRONTEND_PATH`, `PUBLIC_DATA_PATH`, `IMG_PATH` y
-// `DATABASE_PATH`.
+// Estructura vigente (Etapa 4 del plan):
+//   frontend/   document root (HTML, CSS, JS, imágenes, teselas y datos públicos)
+//   backend/    código PHP privado (no se sirve por HTTP)
+//   database/   JSON privado y respaldos (no se sirve por HTTP)
 
 if (!defined('ROOT_PATH')) {
-    // Raíz del proyecto (donde viven `.git`, `backend/`, `js/`, `css/`, ...).
+    // Raíz del proyecto (donde viven `.git`, `backend/`, `frontend/`, ...).
     define('ROOT_PATH', dirname(__DIR__));
 }
 
@@ -26,20 +26,18 @@ if (!defined('BACKEND_PATH')) {
 
 if (!defined('FRONTEND_PATH')) {
     // Document root público: lo único que debe servirse por HTTP.
-    // Etapa 4: pasará a `ROOT_PATH . '/frontend'`.
-    define('FRONTEND_PATH', ROOT_PATH);
+    define('FRONTEND_PATH', ROOT_PATH . '/frontend');
 }
 
 if (!defined('PUBLIC_DATA_PATH')) {
     // Datos públicos consumidos por el mapa (datos.json, GeoTec.js,
-    // caminitos.geojson). Etapa 4: `FRONTEND_PATH . '/data'`.
-    define('PUBLIC_DATA_PATH', ROOT_PATH);
+    // caminitos.geojson). PHP los escribe y el navegador los lee.
+    define('PUBLIC_DATA_PATH', FRONTEND_PATH . '/data');
 }
 
 if (!defined('IMG_PATH')) {
     // Imágenes de carrusel por edificio (`img/<id>/`).
-    // Etapa 4: `FRONTEND_PATH . '/img'`.
-    define('IMG_PATH', ROOT_PATH . '/img');
+    define('IMG_PATH', FRONTEND_PATH . '/img');
 }
 
 if (!defined('DATABASE_PATH')) {

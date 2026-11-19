@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const RAIZ = path.resolve(import.meta.dirname, '..');
-const geojson = JSON.parse(fs.readFileSync(path.join(RAIZ, 'caminitos.geojson'), 'utf8'));
+const geojson = JSON.parse(fs.readFileSync(path.join(RAIZ, 'frontend', 'data', 'caminitos.geojson'), 'utf8'));
 
 const distanciaMetros = (lat1, lng1, lat2, lng2) => {
     const radio = 6371000;

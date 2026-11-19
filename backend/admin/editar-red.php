@@ -64,8 +64,8 @@ $totalSegmentos = is_array($red) ? count($red['features'] ?? []) : 0;
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="">
 <link rel="stylesheet" href="css/vendor/leaflet-geoman/leaflet-geoman.css">
-<link rel="stylesheet" href="css/panel.css">
-<link rel="stylesheet" href="css/red-editor.css">
+<link rel="stylesheet" href="css/admin/panel.css">
+<link rel="stylesheet" href="css/admin/red-editor.css">
 <link rel="icon" type="image/x-icon" href="img/logo-tecnm.png">
 </head>
 <body class="red-body">
@@ -184,11 +184,11 @@ $totalSegmentos = is_array($red) ? count($red['features'] ?? []) : 0;
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
 <script src="js/vendor/leaflet-geoman/leaflet-geoman.min.js"></script>
-<script src="GeoTec.js"></script>
-<script src="js/geo-utils.js"></script>
-<script src="js/pathfinding.js"></script>
-<script src="js/network-analysis.js"></script>
-<script src="js/network-editor.js"></script>
+<script src="data/GeoTec.js"></script>
+<script src="js/shared/geo-utils.js"></script>
+<script src="js/shared/pathfinding.js"></script>
+<script src="js/admin/network-analysis.js"></script>
+<script src="js/admin/network-editor.js"></script>
 <?php endif; ?>
 
 </body>

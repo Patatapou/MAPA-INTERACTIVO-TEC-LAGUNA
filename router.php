@@ -2,15 +2,14 @@
 // ==========================================
 // ROUTER DE DESARROLLO (php -S)
 // ==========================================
-// Uso:  php -S 127.0.0.1:8000 router.php
+// Uso:  php -S 127.0.0.1:8000 -t frontend router.php
 //
 // Objetivo: impedir que el servidor embebido sirva archivos que no deben
 // exponerse por HTTP (datos privados, código interno, respaldos y logs).
 //
-// El servidor embebido de PHP sirve cualquier archivo existente bajo el
-// directorio de trabajo. Sin este router, `PHP/data/users.json`,
-// `PHP/data/rutas.json`, `caminitos.geojson.bak` y `server.err` serían
-// descargables directamente.
+// El document root es `frontend/`, así que `backend/` y `database/` quedan
+// fuera del alcance del servidor. Este router añade una barrera extra por URI
+// y bloquea respaldos, logs y archivos ocultos.
 //
 // Este archivo es SOLO para el entorno local. En producción deben usarse
 // reglas del servidor web (Apache/Nginx) o mover los datos fuera del docroot.
@@ -41,14 +40,14 @@ $rutaMin = strtolower($ruta);
 
 // 1) Directorios que nunca deben servirse por HTTP.
 $directoriosBloqueados = [
+    '/backend',
+    '/database',
+    '/dump',
     '/php/data',
     '/php/public',
     '/php/auth',
     '/php/services',
     '/php/repositories',
-    '/backend',
-    '/database',
-    '/dump',
     '/scripts',
     '/tests',
     '/docs',

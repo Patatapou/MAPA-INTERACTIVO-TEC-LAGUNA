@@ -68,8 +68,8 @@ if (file_exists($rutaSettings)) {
 <link href="https://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="" />
-<link rel="stylesheet" href="css/panel.css">
-<link rel="stylesheet" href="css/rutas.css">
+<link rel="stylesheet" href="css/admin/panel.css">
+<link rel="stylesheet" href="css/admin/rutas.css">
 <link rel="icon" type="image/x-icon" href="img/logo-tecnm.png">
 </head>
 <body>
@@ -210,8 +210,8 @@ if (file_exists($rutaSettings)) {
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin=""></script>
 <!-- Geometrías de edificios como referencia visual (global datosTec) -->
-<script src="GeoTec.js"></script>
-<script src="js/rutas-admin.js"></script>
+<script src="data/GeoTec.js"></script>
+<script src="js/admin/rutas-admin.js"></script>
 
 </body>
 </html>

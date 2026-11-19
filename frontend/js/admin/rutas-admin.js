@@ -122,7 +122,7 @@
         zoomControl: true
     }).setView([25.5324, -103.436], 17);
 
-    L.tileLayer('Teselas ITL Satelital//{z}/{x}/{y}.jpg', {
+    L.tileLayer('tiles/satelital/{z}/{x}/{y}.jpg', {
         minZoom: 15,
         maxZoom: 19
     }).addTo(mapa);

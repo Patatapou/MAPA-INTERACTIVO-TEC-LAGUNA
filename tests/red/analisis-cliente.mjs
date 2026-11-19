@@ -23,12 +23,12 @@ const contexto = { console };
 contexto.globalThis = contexto;
 vm.createContext(contexto);
 
-for (const archivo of ['js/geo-utils.js', 'js/pathfinding.js', 'js/network-analysis.js']) {
+for (const archivo of ['frontend/js/shared/geo-utils.js', 'frontend/js/shared/pathfinding.js', 'frontend/js/admin/network-analysis.js']) {
     const ruta = path.join(raíz, archivo);
     vm.runInContext(fs.readFileSync(ruta, 'utf8'), contexto, { filename: archivo });
 }
 
-const red = JSON.parse(fs.readFileSync(path.join(raíz, 'caminitos.geojson'), 'utf8'));
+const red = JSON.parse(fs.readFileSync(path.join(raíz, 'frontend/data/caminitos.geojson'), 'utf8'));
 
 let fallos = 0;
 let pruebas = 0;

@@ -119,7 +119,7 @@ class SimuladorBeacons {
 }
 
 // ---------- Función Geometría: Distancia en metros (Fórmula de Haversine) ----------
-// Movida a js/geo-utils.js (se carga antes que este archivo y que pathfinding.js).
+// Movida a frontend/js/shared/geo-utils.js (se carga antes que este archivo y que pathfinding.js).
 
 // ---------- Trilateración (mínimos cuadrados para 3 balizas) ----------
 function trilaterar(distancias) {

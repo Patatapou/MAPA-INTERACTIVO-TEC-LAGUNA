@@ -21,7 +21,7 @@ $puerto = 8019
 $job = Start-Job -ScriptBlock {
     param($dir, $p)
     Set-Location $dir
-    php -S "127.0.0.1:$p" router.php 2>$null
+    php -S "127.0.0.1:$p" -t frontend router.php 2>$null
 } -ArgumentList $raiz, $puerto
 Start-Sleep -Seconds 3
 
