@@ -1,5 +1,7 @@
 # Plan de Implementación: Persistencia Documental JSON
 
+> **Documento histórico.** Describe la planificación original con rutas `PHP/data/`. La implementación vigente vive en `backend/repositories/` y `database/runtime/` (ver `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md` y `AGENTS.md`).
+
 **Proyecto:** Mapa Interactivo ITL
 **Estado:** Planificación (sin implementar)
 **Versión:** 1.0

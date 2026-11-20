@@ -1,5 +1,7 @@
 # Plan de Implementación: Módulo de Consulta y Administración de Edificios
 
+> **Documento histórico.** Describe el estado previo a la reestructuración: las rutas `PHP/…`, `index.html` en la raíz y los endpoints sueltos ya no existen. Para la estructura y las rutas vigentes, ver `AGENTS.md` y `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md`.
+
 **Proyecto:** Mapa Interactivo ITL
 **Estado:** Planificación (sin implementar)
 **Versión:** 1.0

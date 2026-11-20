@@ -1,5 +1,7 @@
 # Hallazgos relevantes — Módulo de visualización y gestión de rutas
 
+> **Documento histórico.** Describe el estado previo a la reestructuración: las rutas `PHP/…`, `index.html` en la raíz y los endpoints sueltos ya no existen. Para la estructura y las rutas vigentes, ver `AGENTS.md` y `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md`.
+
 > **Estado:** documento de análisis. No implementa cambios.
 > **Fecha:** 2026-11-14
 > **Rama analizada:** `RaMaik` (árbol limpio en el momento del análisis).

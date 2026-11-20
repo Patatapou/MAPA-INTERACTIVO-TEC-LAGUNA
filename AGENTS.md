@@ -1,282 +1,194 @@
 # AGENTS.md — Mapa Interactivo ITL
 
-Static Leaflet campus map (ITL Laguna). No build step, no package manager, no tests, no CI, no linter/formatter.
+Mapa Leaflet del campus del ITL Laguna + panel administrativo en PHP. Sin *build*: no hay `package.json`, ni Composer/PHPUnit, ni bundler. Los tests son scripts sueltos (`node` y `php`) que se ejecutan a mano.
+
+## Estructura del repositorio
+
+```
+frontend/            document root: lo único que se sirve por HTTP
+  index.html         mapa público
+  index.php          front controller (carga ../backend/bootstrap.php y el router)
+  css/public.css     estilos del mapa público
+  css/admin/         panel, login, editor de geometrías, rutas y editor de red
+  css/vendor/        Leaflet-Geoman (vendorizado)
+  js/public/         main.js, beacons-simulation.js
+  js/shared/         geo-utils.js, pathfinding.js
+  js/admin/          editor, rutas-admin, ruta-editor, network-analysis, network-editor
+  js/vendor/         Leaflet-Geoman (vendorizado)
+  data/              datos públicos: datos.json, GeoTec.js, caminitos.geojson
+  img/<id>/          imágenes de carrusel por edificio + logo
+  tiles/satelital/   teselas locales {z}/{x}/{y}.jpg (zoom 15–19)
+backend/             PHP privado, fuera del document root
+  bootstrap.php      ÚNICA fuente de rutas físicas (constantes)
+  router.php         tabla de rutas `?p=`
+  admin/             vistas del panel
+  api/               endpoints JSON (nombres kebab-case)
+  auth/              sesión, CSRF, rate limiting
+  repositories/      persistencia JSON (flock + rename atómico)
+  services/          lógica de negocio
+  views/404.php
+database/            datos privados y respaldos, fuera del document root
+  runtime/           users.json, settings.json, rutas.json, suggestions.json, audit-log.jsonl
+  backups/           respaldos (p. ej. backups/caminitos/)
+  sources/           fuentes GIS originales (.geojson)
+scripts/             migraciones CLI de la red de caminos
+tests/               pruebas sin dependencias
+DUMP/                legacy movido (PHP/public, procesar.php, mapa.php, respaldos). NO usar ni borrar
+router.php           router del servidor embebido (solo local)
+start-server.ps1     arranca el servidor local
+```
+
+Reglas de oro:
+
+- **No mover ni escribir nada en `database/runtime/` a mano**: `users.json`, `rutas.json` y `audit-log.jsonl` los gestionan los repositorios (y están fuera de Git).
+- Todo archivo nuevo del backend se sirve **solo** a través de `backend/router.php`; nunca en `frontend/`.
+- Las rutas físicas se leen de las constantes de `backend/bootstrap.php` (`ROOT_PATH`, `BACKEND_PATH`, `FRONTEND_PATH`, `PUBLIC_DATA_PATH`, `IMG_PATH`, `DATABASE_PATH`, `RUNTIME_PATH`, `BACKUPS_PATH`). No usar `dirname(__DIR__, n)` en otros archivos.
+- `DUMP/` es histórico: no se importa desde el código, no se sirve por HTTP y no se borra sin autorización explícita.
 
 ## Servidor local (PHP integrado)
-
-No hay servidor en el repo. Usar `start-server.ps1` (PowerShell, Windows):
 
 ```
 .\start-server.ps1
 ```
 
-Lanza `php -S 127.0.0.1:8000` desde la raíz. Escucha SOLO en localhost (no exponer a Internet).
+Lanza `php -S 127.0.0.1:8000 -t frontend router.php` desde la raíz. Escucha SOLO en localhost (no exponer a Internet).
 
 URLs:
 
-- Mapa principal: `http://127.0.0.1:8000/index.html`
-- Panel admin: `http://127.0.0.1:8000/index.php?p=login`
+- Mapa: `http://127.0.0.1:8000/index.html` (o `/`, que redirige)
+- Panel: `http://127.0.0.1:8000/index.php?p=login`
 
-Detener: `Ctrl+C` en la terminal de PowerShell.
+Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP (ver «Correo de sugerencias»).
 
-PHP 8.4.7 CLI disponible. No hay `php.ini` cargado. `mail()` requiere SMTP configurado (ver sección Correo).
+## Rutas HTTP (`backend/router.php`)
 
-## `PHP/public/` está OBSOLETO
+`?p=` se resuelve a un archivo de `backend/` y decide si exige sesión **antes** de incluirlo. Sin `?p=` la respuesta es `302 → index.html`.
 
-- No agregar código, ni leer/escribir datos ahí. Todo el backend vive en la raíz y en `PHP/{admin,auth,data,repositories,services}/`.
-- El router real es `index.php` (raíz); los endpoints son `saveGeometria.php`, `deleteEdificio.php`, `check-session.php`, `send-suggestion.php`, `mapa.php` (raíz).
-- Persistencia: `datos.json`, `GeoTec.js` e `img/` en la raíz. `PHP/public/datos.json` y `PHP/public/img/` son copias viejas que NO se actualizan.
-- No borrar el contenido de `PHP/public/` sin autorización explícita.
+| Ruta | Archivo | Auth |
+|---|---|---|
+| `?p=login` | `backend/admin/login.php` | público (CSRF + rate limit) |
+| `?p=check-session` | `backend/api/check-session.php` | público |
+| `?p=send-suggestion` | `backend/api/send-suggestion.php` | público (CSRF + anti-spam) |
+| `?p=editar[&editar=<id>]` | `backend/admin/panel.php` | sí (+ CSRF en el form) |
+| `?p=logout` | `backend/admin/logout.php` | sí |
+| `?p=editar-geometria&accion=nuevo\|editar&id=` | `backend/admin/editar-geometria.php` | sí |
+| `?p=rutas[&accion=…]` | `backend/admin/rutas.php` | sí |
+| `?p=editar-ruta…` | — (dentro de `rutas.php`/`editar-ruta.php`) | sí |
+| `?p=editar-red` | `backend/admin/editar-red.php` | sí |
+| `?p=getimages` | `backend/api/list-images.php` | sí + CSRF |
+| `?p=saveData` | `backend/api/save-edificio.php` | sí + CSRF |
+| `?p=saveGeometria` | `backend/api/save-geometria.php` | sí + CSRF |
+| `?p=deleteEdificio` | `backend/api/delete-edificio.php` | sí + CSRF |
+| `?p=getRutas` | `backend/api/get-rutas.php` | sí |
+| `?p=saveRuta` | `backend/api/save-ruta.php` | sí + CSRF |
+| `?p=deleteRuta` | `backend/api/delete-ruta.php` | sí + CSRF |
+| `?p=getRedCaminos` | `backend/api/get-red-caminos.php` | sí |
+| `?p=getRed` | `backend/api/get-red.php` | sí |
+| `?p=save-red` | `backend/api/save-red.php` | sí + CSRF |
 
-## Run / verify (mapa estático)
+`frontend/index.php` es el único PHP accesible desde el navegador (front controller delgado).
 
-- Entry point: `index.html` (repo root). Abrir directamente en el navegador o servir estáticamente.
-- Leaflet 1.9.4 carga desde unpkg CDN — internet requerido. Tiles base locales: `Teselas ITL Satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
-- Leaflet-Geoman está vendorizado en `js/vendor/leaflet-geoman/leaflet-geoman.min.js` y `css/vendor/leaflet-geoman/leaflet-geoman.css` (no depende de CDN).
-- Orden de scripts (importante): `GeoTec.js` (define `datosTec`) → `js/beacons-simulation.js` → `js/pathfinding.js` → `js/main.js`.
+## Mapa público (`frontend/index.html`)
 
-## Botón de acceso administrativo / sugerencias
+- Leaflet 1.9.4 desde unpkg CDN — requiere internet. Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
+- Leaflet-Geoman vendorizado en `frontend/js/vendor/leaflet-geoman/` y `frontend/css/vendor/leaflet-geoman/` (sin CDN).
+- Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/main.js`.
+- `js/public/main.js`: `USE_GPS_LOCATION = false` → simulación por beacons; `true` → GPS real (requiere HTTPS/localhost).
+- Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`.
+- Cada edificio muestra un círculo blanco con su ID y tooltip con el nombre. Las geometrías usan `smoothFactor: 0` (mapa, editor y capa de referencia); con el valor por defecto las huellas con muchos vértices se veían como cuadrados.
 
-- Botón ⚙️ junto al control "Centrar" (arriba-derecha del mapa).
-- Al hacer clic, consulta `check-session.php` (raíz) para verificar sesión de admin.
-- **Usuario sin permisos:** abre modal con formulario de sugerencias (edificio, descripción, correo opcional). Incluye botón "Iniciar sesión como administrador" que redirige a `index.php?p=login`. Envía a `send-suggestion.php` (raíz), que reenvía correo a `migel2013+mapa@outlook.com`.
-- **Usuario admin con sesión válida:** redirige a `index.php?p=editar` (panel).
-- **Sesión expirada:** redirige a login.
-- La comprobación de permisos se hace en PHP, no solo en JavaScript.
+### Botón ⚙️ y sugerencias
 
-## Correo de sugerencias
+- Botón junto al control «Centrar» (arriba-derecha). Consulta `index.php?p=check-session`.
+- Sin permisos: modal de sugerencias (edificio, descripción, correo opcional) + botón «Iniciar sesión como administrador». Envía a `index.php?p=send-suggestion`.
+- Admin con sesión: redirige a `index.php?p=editar`. Sesión expirada: a login.
+- La comprobación se hace en PHP, no solo en JS.
 
-- `send-suggestion.php` usa PHP `mail()` con el resultado real (no simula éxito).
+### Correo de sugerencias
+
+- `backend/api/send-suggestion.php` usa `mail()` con el resultado real (no simula éxito) y guarda en `database/runtime/suggestions.json`.
 - Destinatario fijo: `migel2013+mapa@outlook.com`.
-- Configuración SMTP por variables de entorno: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`.
-- Sin `php.ini` ni SMTP configurado, `mail()` fallará y se reportará el error. Configurar SMTP local antes de usar en producción.
-- CSRF: token en sesión, validado con `hash_equals`.
-- Anti-spam: máximo 5 envíos por sesión cada hora.
-- Sanitización: se eliminan saltos de línea de campos de cabecera (protección contra inyección de encabezados).
+- SMTP por variables de entorno: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`. Sin SMTP, `mail()` falla y se reporta.
+- CSRF con `hash_equals`; máximo 5 envíos por sesión y hora; se eliminan saltos de línea de las cabeceras.
 
-## Archivos nuevos (Etapa 1)
+## Datos
 
-- `start-server.ps1` — inicia servidor PHP local
-- `check-session.php` (raíz) — verifica sesión admin + devuelve token CSRF
-- `send-suggestion.php` (raíz) — procesa formulario y envía correo (también guarda en `PHP/data/suggestions.json`)
-- `.gitignore` — excluye configuración local, credenciales, logs, datos runtime
+### Públicos (`frontend/data/`)
 
-## Buscador en panel administrativo
+- `datos.json` — metadatos: `nombre`, `descripcion`, `aulas`, `carpeta`, `tipo`, `imagenes`. Clave = ID del edificio. `tipo` es `edificio` (por defecto) o `acceso`.
+- `GeoTec.js` — geometrías: variable global `datosTec` (FeatureCollection); `properties.id` coincide con la clave de `datos.json`.
+- `caminitos.geojson` — red de caminos (formato v2, ver «Editor de la red»).
 
-- `PHP/admin/panel.php` — sidebar de edificios con campo de búsqueda (`#buscar-edificios`)
-- Filtra edificios por nombre, ID, aulas o tipo (búsqueda client-side, sin recargar página)
-- `css/panel.css` — estilos del buscador en `.sidebar-search` y del distintivo `.tipo-badge`
-- Cada `<a class="edificio-item">` tiene `data-search` con ID, nombre, aulas y tipo en minúsculas
-- Si no hay coincidencias, se muestra mensaje "No se encontraron edificios que coincidan"
+PHP escribe estos tres archivos desde el panel; el navegador los lee. `img/<id>/` contiene las imágenes de carrusel.
 
-## Autenticación y control de permisos (Etapa 2)
+### Privados (`database/`)
 
-- `PHP/auth/auth_middleware.php` — función `requerirAdmin()` para proteger rutas; `generarTokenCSRF()`, `validarTokenCSRF()`, `renovarTokenCSRF()`
-- `PHP/auth/csrf.php` — generación y validación de tokens CSRF
-- `PHP/auth/rate_limit.php` — rate limiting de intentos de login (máx. 5 por hora)
-- `PHP/auth/` — directorio de infraestructura de seguridad
+| Archivo | Contenido |
+|---|---|
+| `runtime/users.json` | cuentas de administrador |
+| `runtime/settings.json` | configuración general (sin secretos) |
+| `runtime/rutas.json` | rutas administrativas |
+| `runtime/suggestions.json` | sugerencias del mapa público |
+| `runtime/audit-log.jsonl` | auditoría en JSONL |
+| `backups/caminitos/` | respaldos de la red (retención 30) |
+| `sources/*.geojson` | fuentes GIS originales |
 
-### Protección de rutas
+`database/runtime/` y `database/backups/` están en `.gitignore`. `bootstrap.php` falla con mensaje claro si falta `runtime/` (fail-visible), en lugar de crear un `users.json` vacío.
 
-- `index.php?p=editar` — requiere sesión de admin válida
-- `index.php?p=logout` — requiere sesión de admin válida
-- `index.php?p=getimages` — requiere sesión de admin válida + sanitización de `folder` contra path traversal
-- `index.php?p=saveData` — requiere sesión de admin válida + validación CSRF
-- `index.php?p=login` — público (puerta de entrada), con CSRF y rate limiting, autentica contra `users.json`
-- `index.php?p=mapa` — público (mapa estático)
+### Modelo de usuario (`users.json`)
 
-### Sesiones
-
-- Cookie de sesión: `HttpOnly`, `SameSite=Lax`, `Secure` solo si HTTPS, vida 2 horas
-- `session_regenerate_id(true)` tras login exitoso (previene fijación de sesión)
-- Expiración por inactividad: 2 horas (`$_SESSION['auth_time']`)
-- CSRF token requerido en formularios de login y guardado de edificios
-
-## Capa de persistencia documental JSON (Etapa 3)
-
-- `PHP/data/` — directorio privado de almacenamiento (usuarios, configuración, auditoría, sugerencias). No debe exponerse por HTTP en producción.
-- `PHP/data/users.json` — cuentas de administrador (reemplaza credenciales hardcodeadas de `credenciales.php`)
-- `PHP/data/settings.json` — configuración general del sistema (sin secretos ni contraseñas SMTP)
-- `PHP/data/audit-log.jsonl` — registro de eventos de auditoría en formato JSONL
-- `PHP/data/suggestions.json` — sugerencias enviadas desde el mapa público
-- `PHP/repositories/BaseRepository.php` — clase base con lectura/escritura atómica (flock + reemplazo atómico)
-- `PHP/repositories/UserRepository.php` — operaciones CRUD de usuarios
-- `PHP/repositories/SettingsRepository.php` — operaciones de configuración
-- `PHP/repositories/AuditLogRepository.php` — operaciones JSONL de auditoría
-- `PHP/repositories/SuggestionRepository.php` — operaciones CRUD de sugerencias
-- `PHP/services/AuthService.php` — lógica de autenticación contra users.json
-- `PHP/services/SuggestionService.php` — lógica de sugerencias del mapa público
-- `PHP/services/SettingsService.php` — lógica de configuración del sistema
-
-### Autenticación
-
-- Login autentica ÚNICAMENTE contra `PHP/data/users.json` (no usa `credenciales.php`)
-- Contraseñas almacenadas con `password_hash()`, verificadas con `password_verify()`
-- Primer usuario: `admin` / `123456` (hash migrado de credenciales.php)
-
-### Modelo de usuario (users.json)
-
-| Campo          | Tipo   | Descripción                         |
-| -------------- | ------ | ------------------------------------ |
-| id             | string | Identificador único                 |
-| username       | string | Nombre de usuario                    |
-| email          | string | Correo electrónico                  |
-| password_hash  | string | Hash de contraseña                  |
-| role           | string | Rol (ej: administrador)              |
-| status         | string | Estado (activo, inactivo, bloqueado) |
-| created_at     | string | Fecha de creación (ISO 8601)        |
-| updated_at     | string | Última modificación (ISO 8601)     |
-| last_login_at  | string | null                                 |
-| schema_version | int    | Versión del esquema                 |
-
-## Archivos modificados
-
-- `index.php` (raíz) — router: middleware `requerirAdmin()` en rutas protegidas (editar, logout, getimages, saveData, saveGeometria, deleteEdificio, editar-geometria)
-- `PHP/admin/login.php` — usa `AuthService` (users.json), CSRF, rate limiting, `session_regenerate_id(true)`, cookies seguras
-- `PHP/admin/panel.php` — usa `requerirAdmin()` en lugar de verificación inline de sesión
-- `PHP/admin/saveEdificio.php` — usa `requerirAdmin()` + CSRF + registro de auditoría al guardar metadatos
-- `PHP/admin/imagelist.php` — usa `requerirAdmin()` + sanitiza `folder` contra path traversal (lee `img/<id>/` de la raíz)
-- `PHP/admin/logout.php` — usa `requerirAdmin()`, limpia cookie de sesión, redirige a login
-- `send-suggestion.php` (raíz) — usa `SuggestionService` para guardar en suggestions.json + envío de correo
-- `index.html` — botón ⚙️ + modal de sugerencias
-- `js/main.js` — lógica de sesión admin, formulario, envío AJAX
-- `styles.css` (raíz, usado por `index.html`) — estilos del botón y modal
-
-## Archivos que deben mantenerse fuera de GitHub
-
-- `php.ini`, `.env` (configuración local)
-- Credenciales y archivos `*credenciales*`
-- `PHP/data/` (usuarios, configuración, auditoría, sugerencias)
-- Logs `*.log`
-- Imágenes subidas por el panel admin (`img/`)
-
-## Datos clave
-
-- `datos.json` — metadata de edificios. Claves deben coincidir con `id` en `GeoTec.js`.
-- `GeoTec.js` — GeoJSON de huellas de edificio (global `datosTec`).
-- `caminitos.geojson` — red de caminos normalizada del router Dijkstra y del módulo de rutas: v2 con `revision` y `next_seq`; 312 features (IDs `seg-xxxxxxxx` o `seg-000NNN`), 644 vértices. Respaldo del original en `caminitos.geojson.bak`.
-- `img/<id>/` — imágenes de carrusel por edificio.
-- `PHP/data/rutas.json` — rutas administrativas (privado, fuera de git).
-
-## Módulo de administración de edificios (etapa actual)
-
-- `PHP/admin/editar-geometria.php` — editor visual de geometrías con Leaflet + Leaflet-Geoman (vendorizado)
-- `saveGeometria.php` (raíz) — endpoint para guardar metadatos + geometría (`datos.json` + `GeoTec.js`)
-- `deleteEdificio.php` (raíz) — endpoint para eliminar edificio (ambos archivos)
-- `PHP/services/BuildingService.php` — lógica de negocio: crear/actualizar/eliminar edificios, `tipo` y `actualizarMetadatos()`
-- `PHP/repositories/BuildingGeometryRepository.php` — lectura/escritura atómica de GeoTec.js
-- `css/editor.css` — estilos del editor (leyenda de capas, ayudas de formulario)
-- `js/editor.js` — dibujo manual + edición de vértices con Geoman + capa de referencia
-- `js/vendor/leaflet-geoman/leaflet-geoman.min.js` — plugin de edición vendorizado (2.20.6)
-- `css/vendor/leaflet-geoman/leaflet-geoman.css` — estilos del plugin
-
-### Rutas del panel administrativo
-
-| Ruta                                                   | Descripción                                                     | Requiere auth |
-| ------------------------------------------------------ | ---------------------------------------------------------------- | ------------- |
-| `index.php?p=editar`                                 | Panel principal con lista de edificios                           | Sí           |
-| `index.php?p=editar&editar=<id>`                     | Editar metadatos e imágenes (incluye `csrf_token` en el form) | Sí + CSRF    |
-| `index.php?p=editar-geometria&accion=nuevo`          | Editor para crear nuevo edificio                                 | Sí           |
-| `index.php?p=editar-geometria&accion=editar&id=<id>` | Editor para editar geometría existente                          | Sí           |
-| `index.php?p=saveGeometria`                          | POST: guardar edificio (metadatos + geometría)                  | Sí + CSRF    |
-| `index.php?p=saveData`                               | POST: guardar metadatos + imágenes de un edificio existente     | Sí + CSRF    |
-| `index.php?p=deleteEdificio`                         | POST: eliminar edificio                                          | Sí + CSRF    |
-| `index.php?p=rutas`                                  | Listado de rutas (`&accion=ver&id=`, `&accion=nueva`, `&accion=editar&id=`) | Sí  |
-| `index.php?p=getRutas`                               | GET: listado (`?id=` para el detalle)                            | Sí           |
-| `index.php?p=saveRuta`                               | POST: crear/actualizar ruta                                      | Sí + CSRF    |
-| `index.php?p=deleteRuta`                             | POST: eliminar ruta                                              | Sí + CSRF    |
-| `index.php?p=getRedCaminos`                          | GET: segmentos normalizados de `caminitos.geojson`               | Sí           |
-
-### Editor de geometrías
-
-- Botón "➕ Agregar edificio" en el panel principal abre el editor
-- Cada elemento de la lista muestra el nombre a la izquierda y las acciones a la derecha, apiladas: "Editar geometría" arriba y "Eliminar" debajo
-- Botón "Editar geometría" abre el editor de edición del edificio
-- Botón "Eliminar" elimina metadatos + geometría (con confirmación y respuesta JSON)
-- La lista `#lista-edificios` no muestra viñetas (`list-style: none`)
-- Toolbar de dibujo siempre visible: 🟥 Dibujar, ✏️ Editar, 🗑️ Eliminar
-- **Dibujar**: clic para agregar vértices. Cierra con doble clic o con un clic a ≤10 **píxeles** del primer vértice (tolerancia constante en píxeles, independiente del zoom; no son metros)
-- **Editar**: activa `polygon.pm.enable()` de Leaflet-Geoman y arrastra los vértices. Es el plugin el que gestiona la edición; `js/editor.js` solo sincroniza el GeoJSON al input en `pm:markerdrag`, `pm:markerdragend`, `pm:vertexadded`, `pm:vertexremoved` y `pm:edit`
-- **Eliminar**: haz clic sobre el polígono (no sobre su bounding box) para borrarlo del formulario
-- Las geometrías existentes se dibujan como **capa de referencia de solo lectura** (`interactive: false`): no reciben clics, no se pueden editar ni borrar por accidente. La geometría del edificio en edición se excluye de la capa de referencia
-- Formulario: ID, Nombre, Tipo (Edificio / Acceso), Descripción, Aulas
-- En modo edición el ID es de solo lectura (no hay renombrado)
-- Botón "💾 Guardar edificio" persiste en `datos.json` y `GeoTec.js`
-- Botón "Cancelar" / "← Volver al panel" para salir sin guardar
-
-### Arquitectura de datos (separada)
-
-- `datos.json` (raíz) — metadatos: `nombre`, `descripcion`, `aulas`, `carpeta`, `tipo`, `imagenes`. Clave = ID del edificio.
-- `GeoTec.js` (raíz) — geometrías: variable global `datosTec` (GeoJSON FeatureCollection). Cada feature tiene `properties.id` que coincide con la clave en `datos.json`.
-- `caminitos.geojson` — red de caminos para el router Dijkstra.
-- `img/<id>/` — imágenes de carrusel por edificio (en la raíz).
+Campos: `id`, `username`, `email`, `password_hash`, `role`, `status`, `created_at`, `updated_at`, `last_login_at`, `schema_version`. Contraseñas con `password_hash()`/`password_verify()`. Usuario inicial: `admin` / `123456`.
 
 ### Modelo edificio vs. acceso
 
-- `tipo` en `datos.json` distingue registros: `"edificio"` (valor por defecto si el campo falta) y `"acceso"`.
-- **P1–P6 son accesos (puertas del campus), no geometrías huérfanas.** Se conservan, se almacenan en `datos.json` con `"tipo": "acceso"` y se gestionan desde el panel como cualquier otro registro (editar metadatos, geometría, eliminar).
-- En el panel se muestran con el distintivo "Acceso" en vez del conteo de aulas.
-- El selector de puertas del mapa (`#doors-select`) y `obtenerNombrePuerta()` leen el nombre desde `datos.json`; renombrar un acceso en el panel se refleja en el mapa público.
-- `properties.Nombre` de `GeoTec.js` es el nombre largo/descriptivo que se usa en el tooltip del mapa; `datos.json.nombre` es el nombre corto de despliegue. **Son distintos a propósito: no sincronizar en bloque.**
+- `tipo: "acceso"` para las puertas **P1–P6**; se gestionan como cualquier otro registro.
+- En el panel se muestran con el distintivo «Acceso» en vez del conteo de aulas.
+- El selector de puertas (`#doors-select`, `obtenerNombrePuerta()`) lee el nombre de `datos.json`.
+- `properties.Nombre` de `GeoTec.js` es el nombre largo del tooltip; `datos.json.nombre` es el nombre corto. **Son distintos a propósito: no sincronizar en bloque.**
 
-### Depuración de errores PHP
+## Panel administrativo
 
-- Los errores están ocultos por defecto. Para verlos en local: `APP_DEBUG=1 php -S 127.0.0.1:8000` (o `$env:APP_DEBUG='1'` en PowerShell).
-- Las respuestas AJAX son siempre JSON; si llega HTML, el JS muestra "Respuesta inesperada del servidor".
+### Edificios
 
-### Label de edificio en el mapa
+- `#buscar-edificios` filtra por nombre, ID, aulas o tipo en el cliente (cada `.edificio-item` lleva `data-search`); sin coincidencias muestra «No se encontraron edificios que coincidan».
+- Cada elemento: «Editar geometría» arriba y «Eliminar» debajo. La lista `#lista-edificios` va sin viñetas.
+- «➕ Agregar edificio» abre el editor de geometrías.
 
-- Cada edificio muestra un círculo blanco con su ID (ej: "5", "1A", "P1")
-- Tooltip con el nombre del edificio al pasar el mouse
-- Las geometrías se dibujan con `smoothFactor: 0` en `L.geoJSON` / `L.polygon` (mapa, editor y capa de referencia). Leaflet simplifica por defecto (`smoothFactor: 1`) y las huellas con muchos vértices se veían como cuadrados.
+### Editor de geometrías (`?p=editar-geometria`)
 
-## Archivos nuevos (módulo de edificios)
+- Vista `backend/admin/editar-geometria.php`; lógica `frontend/js/admin/editor.js`; estilos `frontend/css/admin/editor.css`.
+- Toolbar siempre visible: 🟥 Dibujar, ✏️ Editar, 🗑️ Eliminar.
+- **Dibujar**: clic para añadir vértices; cierra con doble clic o con un clic a ≤10 **píxeles** del primer vértice (tolerancia en píxeles, no metros).
+- **Editar**: `polygon.pm.enable()` de Geoman gestiona los vértices; `editor.js` solo sincroniza el GeoJSON al input en `pm:markerdrag`, `pm:markerdragend`, `pm:vertexadded`, `pm:vertexremoved` y `pm:edit`.
+- **Eliminar**: clic sobre el polígono (no sobre su *bounding box*).
+- Las geometrías existentes son capa de referencia de solo lectura (`interactive: false`); la del edificio en edición se excluye.
+- Formulario: ID, Nombre, Tipo (Edificio/Acceso), Descripción, Aulas. En edición el ID es de solo lectura.
+- «💾 Guardar edificio» → `backend/api/save-geometria.php` (metadatos + geometría).
+- `tipo` y `actualizarMetadatos()` viven en `backend/services/BuildingService.php`; `GeoTec.js` se escribe con `backend/repositories/BuildingGeometryRepository.php`.
 
-- `PHP/admin/editar-geometria.php` — vista del editor
-- `saveGeometria.php` (raíz) — endpoint guardar
-- `deleteEdificio.php` (raíz) — endpoint eliminar
-- `PHP/services/BuildingService.php` — servicio de lógica
-- `PHP/repositories/BuildingGeometryRepository.php` — repositorio de geometrías
-- `css/editor.css` — estilos
-- `js/editor.js` — lógica JS
-- `js/vendor/leaflet-geoman/` y `css/vendor/leaflet-geoman/` — plugin vendorizado
+## Autenticación y seguridad
 
-## Archivos modificados (adicionales)
+- `backend/auth/auth_middleware.php` — `requerirAdmin()`, `generarTokenCSRF()`, `validarTokenCSRF()`, `renovarTokenCSRF()`.
+- `backend/auth/csrf.php` — tokens CSRF; `backend/auth/rate_limit.php` — máximo 5 intentos de login por hora.
+- Login autentica **solo** contra `database/runtime/users.json`, vía `backend/services/AuthService.php`.
+- Cookie de sesión `HttpOnly`, `SameSite=Lax`, `Secure` solo con HTTPS, vida 2 horas; expiración por inactividad (`$_SESSION['auth_time']`).
+- `session_regenerate_id(true)` tras login.
+- Los endpoints vuelven a comprobar sesión y CSRF por su cuenta (defensa en profundidad).
 
-- `index.php` (raíz) — rutas `?p=editar-geometria`, `?p=saveGeometria`, `?p=deleteEdificio`
-- `PHP/admin/panel.php` — botón "Agregar edificio", "Editar geometría", "Eliminar", "Volver al mapa", CSRF en formularios, borrado vía `fetch`
-- `js/main.js` — nombres de accesos leídos desde `datos.json`
+## Módulo de rutas (caminos)
 
-## Archivos que deben mantenerse fuera de GitHub
+Recorridos administrativos; **no** alteran el cálculo del mapa público.
 
-- `php.ini`, `.env` (configuración local)
-- Credenciales y archivos `*credenciales*`
-- `PHP/data/` (usuarios, configuración, auditoría, sugerencias)
-- Logs `*.log`
-- Imágenes subidas por el panel admin (`img/`)
+- `backend/admin/rutas.php` — listado con buscador, filtros (tipo, solo accesibles), mapa, detalle y modal de borrado.
+- `backend/admin/editar-ruta.php` — editor de la cadena de segmentos.
+- `backend/api/{get-rutas,save-ruta,delete-ruta,get-red-caminos}.php` + `backend/api/_api-rutas.php` (helpers).
+- `backend/services/RouteService.php` — validaciones, nombre único, conflicto 409, auditoría.
+- `backend/services/PathNetworkService.php` — índice de la red, `validarCadena()`, `hidratar()`, Haversine.
+- `backend/services/NetworkTopologyService.php` — nodos, grado, componentes.
+- `backend/repositories/RouteRepository.php` (persistencia) y `PathNetworkRepository.php` (red).
+- Cliente: `frontend/css/admin/rutas.css`, `frontend/js/admin/rutas-admin.js`, `frontend/js/admin/ruta-editor.js`.
 
-## Módulo de gestión de rutas (caminos)
-
-Recorridos administrativos (no alteran el cálculo del mapa público). Sin base de datos: persisten en `PHP/data/rutas.json` y trabajan sobre la red normalizada de `caminitos.geojson`.
-
-### Archivos del módulo
-
-- `PHP/admin/rutas.php` — listado con buscador, filtros (tipo, solo accesibles), mapa, panel de detalle y modal de borrado
-- `PHP/admin/editar-ruta.php` — editor: mapa de la red + formulario + toolbar de cadena
-- `PHP/admin/getRutas.php`, `saveRuta.php`, `deleteRuta.php`, `getRedCaminos.php` — endpoints JSON
-- `PHP/admin/_api-rutas.php` — utilidades compartidas de la API (respuestas JSON, CSRF, parseo)
-- `PHP/services/RouteService.php` — reglas de negocio (validaciones, nombre único, conflicto 409, auditoría)
-- `PHP/services/PathNetworkService.php` — índice de la red, `validarCadena()`, `hidratar()`, Haversine
-- `PHP/services/NetworkTopologyService.php` — topología (nodos, grado, componentes) para diagnóstico
-- `PHP/repositories/RouteRepository.php` — persistencia de `rutas.json` (fail-closed, lock, `.bak`, migración de esquema)
-- `PHP/repositories/PathNetworkRepository.php` — lectura/escritura atómica de `caminitos.geojson`
-- `css/rutas.css`, `js/rutas-admin.js`, `js/ruta-editor.js` — vista y lógica de cliente
-- `scripts/migrar_red_caminos.php` — normalización de la red (CLI)
-- `tests/` — pruebas sin dependencias (ver abajo)
-
-### Modelo de datos
-
-`PHP/data/rutas.json`:
+`database/runtime/rutas.json`:
 
 ```json
 {
@@ -302,123 +214,102 @@ Recorridos administrativos (no alteran el cálculo del mapa público). Sin base 
 }
 ```
 
-- `tipo`: `principal | alterna | acceso | emergencia | institucional`
-- `estado`: `activa | inactiva | borrador`
-- `segmentos`: solo `{id, sentido}`; `sentido` es `normal | inverso`. La geometría y la distancia **siempre** las calcula el servidor.
-- `origen`/`destino`: `{tipo, ref}` con `tipo` en `acceso | edificio | nodo` y `ref` validado contra `datos.json`.
+- `tipo`: `principal | alterna | acceso | emergencia | institucional`; `estado`: `activa | inactiva | borrador`.
+- `segmentos`: solo `{id, sentido}` (`normal | inverso`); geometría y distancia las calcula **siempre** el servidor.
+- `origen`/`destino`: `{tipo, ref}` con `tipo` en `acceso | edificio | nodo`, validado contra `datos.json`.
 
-### Reglas de negocio
+Reglas: nombre único (sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control; cadena contigua con tolerancia de 2,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`), máximo 500 segmentos, sin IDs duplicados ni inexistentes; al actualizar se exige `updated_at` vigente (si no, **409**); toda alta/edición/borrado se audita (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
 
-- Nombre único (comparación sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control.
-- La cadena de segmentos debe ser contigua: extremo compartido con tolerancia de 2,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`, la misma del snapping del grafo público); máximo 500 segmentos; sin IDs duplicados ni inexistentes.
-- Al actualizar se exige `updated_at` vigente; si no coincide se devuelve **409** y no se sobrescribe nada.
-- Toda alta, edición y borrado se registra en `PHP/data/audit-log.jsonl` (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
+### Interacción del editor de rutas
 
-### Editor de rutas: interacción y estilos
+- Clic en la red: elige el segmento más cercano al cursor en 12 px (independiente del zoom) y cambia el cursor a puntero (`#map-ruta.mapa-sobre-segmento`).
+- Si el segmento no es contiguo, se busca uno contiguo a ≤14 px antes de rechazar; el mensaje indica la separación real al extremo más cercano.
+- Estilos: base azul marino `#12306b` (peso 5, contorno `#f8fafc` peso 9), contiguos `#0b57d0` (6/10), no contiguos `#7d8ba3` (4, opacidad 0,35), cadena en ámbar `#f59e0b` (peso 8, no interactiva).
+- `cargarRed()` se resuelve **antes** de `cargarRutaExistente()` (secuencial).
+- La tarjeta completa abre el detalle; cada tarjeta conserva «Editar» y «Eliminar».
+- Navegación con botones: «🚶 Rutas» en el panel y «← Panel» en el módulo.
 
-- **Clic en la red**: el editor escucha el clic sobre el mapa y elige el segmento **más cercano al cursor** dentro de un radio de 12 px (independiente del zoom); no depende del orden de las capas ni del grosor de la línea. El cursor cambia a puntero (`#map-ruta.mapa-sobre-segmento`) cuando hay un segmento a tiro.
-- Si el segmento elegido no es contiguo, se busca un segmento contiguo a ≤14 px del clic antes de rechazar la operación.
-- Al rechazar, el mensaje indica la separación real al extremo más cercano de la cadena (útil para detectar huecos de la red).
-- **Estilos de la red**: base azul marino `#12306b` (peso 5) con contorno claro `#f8fafc` (peso 9); contiguos en azul `#0b57d0` (peso 6) con contorno (peso 10); no contiguos en gris azulado `#7d8ba3` (peso 4, opacidad 0,35) sin contorno; cadena en ámbar `#f59e0b` (peso 8, no interactiva). La leyenda usa el mismo azul marino.
-- **Precarga**: `cargarRed()` se resuelve **antes** de `cargarRutaExistente()` (secuencial). En paralelo, la cadena de una ruta existente se comparaba contra un índice vacío y se descartaban segmentos válidos con el aviso de "segmentos que ya no existen".
-- En el listado, la tarjeta completa abre el detalle al hacer clic (sin botón "Ver"); cada tarjeta conserva "Editar" y "Eliminar".
-- Navegación del panel con **botones** (no enlaces): "🚶 Rutas" en el panel de edificios y "← Panel" en el módulo de rutas.
+## Editor de la red de caminos
 
-### Migración de la red (una sola vez)
+Editor gráfico de `frontend/data/caminitos.geojson`. No altera `dijkstra`, `buildGraph`, `findClosestNode` ni `js/public/main.js`.
+
+### Formato v2
+
+- `schema_version: 2`, `revision` (entero monotónico) y `next_seq`.
+- IDs históricos `seg-<8hex>` (y `seg-<8hex>-NN`) se conservan porque los usa `rutas.json`; los nuevos son `seg-<6 dígitos>` desde `next_seq`; los no guardados son `tmp-…` y el servidor los renumera.
+- Migración única: `php scripts/migrar_red_v2.php --apply` (idempotente). No confundir con `scripts/migrar_red_caminos.php` (normaliza topología).
+- Cada guardado deja respaldo en `database/backups/caminitos/` (retención 30). Escritura con `flock`, temporal y `rename` atómico; lectura **fail-closed**.
+
+### Vista y modos
+
+- Solo se abre desde el módulo de rutas con «🗺️ Red de caminos»; vuelve con «← Volver a rutas».
+- La barra lateral divide **Segmentos** y **Validación** al 50 % con divisor arrastrable (`#red-splitter`): ratón, táctil o `↑`/`↓`. El reparto se guarda en `estado.altoSegmentos`; por debajo de 861 px el divisor se oculta.
+- **Consultar**: clic para ver ID, estado, vértices y longitud.
+- **Dibujar**: polilínea con snapping propio a ≤8 m (preferencia de vértice si está a ≤1 m). Botón interruptor; se confirma con «✔️ Terminar dibujo», Enter o doble clic; Esc cancela.
+- **Editar**: Geoman gestiona los vértices del segmento seleccionado; la capa de referencia es de solo lectura.
+- **Eliminar**: marca/desmarca segmentos; un `tmp-` se descarta directo.
+- Trazo visible de 6–7 px (9 px al seleccionar) más una polilínea transparente de 20 px (`red-golpe`) para acertar con el cursor.
+- Validación en vivo (`frontend/js/admin/network-analysis.js`) replica E01–E08/W01–W06 y bloquea el guardado si la propuesta deja sin ruta algún par puerta→edificio (E08); el servidor lo revalida con `NetworkService`/`NetworkGraph`.
+
+### Arquitectura
+
+- `backend/admin/editar-red.php` — vista + datos embebidos (`RED_INICIAL`, `RED_REVISION`, `RED_CSRF`, `RED_PAIRS`, `RED_METADATOS`).
+- `backend/api/get-red.php`, `backend/api/save-red.php` (400 E01–E05/E07/E08, 403, 405, 409, 500; cuerpo FormData o JSON; `base_revision` obligatorio; límite 2 MB).
+- `backend/services/NetworkService.php`, `backend/services/NetworkGraph.php`.
+- `backend/repositories/NetworkRepository.php` (v2, 409, respaldos; extiende `PathNetworkRepository`; el editor nunca usa `PathNetworkRepository::guardar()`).
+- `scripts/migrar_red_v2.php`.
+- `frontend/js/admin/network-analysis.js`, `frontend/js/admin/network-editor.js`, `frontend/css/admin/red-editor.css`.
+
+## Migración de la red (topología, una sola vez)
 
 ```powershell
-php scripts/migrar_red_caminos.php --dry-run   # simulación, no escribe
-php scripts/migrar_red_caminos.php             # normaliza caminitos.geojson
+php scripts/migrar_red_caminos.php --dry-run
+php scripts/migrar_red_caminos.php
 ```
 
-- Normaliza topología (extremos compartidos), asigna IDs estables `seg-xxxxxxxx`, conserva `properties` e IDs previos y deja respaldo `caminitos.geojson.bak.<marca>`.
-- Es **idempotente**: volver a ejecutarlo no cambia el archivo (verifica la huella con `tests/grafo-huella.mjs`).
-- La migración no toca `datos.json`, `GeoTec.js` ni `PHP/public/`.
+Normaliza extremos compartidos, asigna IDs estables, conserva `properties` e IDs previos y deja `caminitos.geojson.bak.<marca>`. Es idempotente. No toca `datos.json` ni `GeoTec.js`.
 
-### Pruebas (sin PHPUnit ni Composer)
+## Pruebas (sin PHPUnit ni Composer)
 
 | Comando | Qué valida |
 |---|---|
 | `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=241 aristas=312 grado1=20 componentes=1 rutas=348/348` y geometría `312/644` |
 | `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
-| `node tests/diagnostico-red.mjs` | Diagnóstico de la red: extremos sin pareja, "atascados" con interior cercano y realmente aislados a 2,5 m (informe, sin umbral) |
-| `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
-| `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
-| `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (arranca su propio servidor en el puerto 8019) |
-| `powershell -File tests/sesion-expirada.ps1` | S-10: sesión caducada/vigente con archivos de sesión fabricados (puerto 8020) |
-| `powershell -File tests/regresion-general.ps1` | Regresión: mapa público, `datos.json`/`GeoTec.js` intactos, CSRF de edificios |
-
-`tests/_pruebas.php`, `tests/_validar-cadenas.php` y `tests/_escritor-concurrente.php` son soporte interno (mini-harness y helpers).
-
-### Router de desarrollo
-
-- `router.php` bloquea por HTTP `PHP/data/`, `PHP/auth/`, `PHP/services/`, `PHP/repositories/`, `scripts/`, `tests/`, `docs/` y extensiones peligrosas (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`, `.lock`). También bloquea cualquier nombre que contenga `.bak` (respaldos con marca de tiempo).
-- `start-server.ps1` ya arranca `php -S 127.0.0.1:8000 router.php`; sin él, `PHP/data/` quedaría accesible en local.
-
-## Editor de la red de caminos
-
-Editor gráfico de `caminitos.geojson` (consultar, dibujar, editar vértices y eliminar segmentos). No altera el cálculo del mapa público: `dijkstra`, `buildGraph`, `findClosestNode` y `js/main.js` siguen intactos.
-
-### Formato v2 de `caminitos.geojson`
-
-- Única fuente de verdad de la red. Ahora incluye `schema_version: 2`, `revision` (entero monotónico) y `next_seq` (siguiente secuencia de IDs).
-- IDs históricos `seg-<8hex>` (y `seg-<8hex>-NN`) se conservan porque los usa `PHP/data/rutas.json`. Los segmentos nuevos reciben `seg-<6 dígitos>` a partir de `next_seq`; mientras no se guardan usan `tmp-<...>` y el servidor los renumera.
-- La migración se aplica una sola vez con `php scripts/migrar_red_v2.php --apply` (idempotente, con respaldo y verificación de huella). No confundir con `scripts/migrar_red_caminos.php`, que normaliza la topología.
-- Respaldo de cada guardado en `PHP/data/backups/caminitos/` (retención de 30). Escritura con `flock`, archivo temporal y `rename` atómico; lectura **fail-closed**.
-
-### Acceso y estructura de la vista
-
-- El editor **solo se abre desde el módulo de rutas** con el botón «🗺️ Red de caminos» (`PHP/admin/rutas.php`). El panel de edificios conserva únicamente «← Volver al mapa», «🚶 Rutas», «➕ Nuevo edificio» y «Cerrar sesión».
-- Las vistas del editor vuelven con «← Volver a rutas» (`index.php?p=rutas`).
-- La barra lateral divide **Segmentos** y **Validación** al 50 % con un divisor arrastrable (`#red-splitter`, `role="separator"`): arrastre con el ratón o táctil, o `↑`/`↓` con el teclado. El reparto se guarda en memoria (`estado.altoSegmentos`) y se recalcula en `resize`; por debajo de 861 px el divisor se oculta y cada bloque usa su `max-height`.
-- Cada bloque tiene su propio scroll: la lista de segmentos y `.red-validacion-cuerpo`.
-
-### Rutas del editor
-
-| Ruta | Descripción | Requiere auth |
-|---|---|---|
-| `index.php?p=editar-red` | Editor gráfico (página completa) | Sí |
-| `index.php?p=getRed` | GET: red vigente + `revision` + `segmentos` | Sí |
-| `index.php?p=save-red` | POST: validar y guardar (CSRF + `base_revision`) | Sí + CSRF |
-
-`save-red.php` responde 400 (E01–E05, E07, E08), 403 (sesión/CSRF), 405 (método), 409 (revisión obsoleta, E06) o 500. El cuerpo acepta `FormData` o JSON; `base_revision` es obligatorio y la petición está limitada a 2 MB.
-
-### Modos del editor
-
-- **Consultar**: clic en un segmento (mapa o lista) para ver ID, estado, vértices y longitud.
-- **Dibujar**: polilínea manual con snapping propio a vértices/segmentos a ≤8 m (preferencia de vértice si está a ≤1 m de la mejor arista). El botón «✏️ Dibujar» funciona como **interruptor**: un clic entra en modo dibujo y otro sale sin añadir nada. El trazado se convierte en segmento solo con «✔️ Terminar dibujo» (visible únicamente mientras se dibuja), con Enter o con doble clic; Esc y el segundo clic en «Dibujar» cancelan. Se dibuja un `tmp-`.
-- **Editar**: Leaflet-Geoman gestiona los vértices del segmento seleccionado (`pm:markerdrag`, `pm:markerdragend`, `pm:vertexadded`, `pm:vertexremoved`, `pm:edit`). La capa de referencia (edificios y accesos) es de solo lectura.
-- **Eliminar**: marca/desmarca segmentos existentes para borrarlos al guardar. Un segmento `tmp-` (nunca guardado) se descarta directamente.
-- **Ancho y clic**: el trazo visible usa grosor 6–7 px (9 px al seleccionar) y cada segmento lleva además una polilínea transparente de 20 px (`red-golpe`) con el mismo manejador de clic, para acertar con el cursor sin engordar el mapa.
-- La validación en vivo (`js/network-analysis.js`) reutiliza `buildGraph()` y replica E01–E08/W01–W06. E08 bloquea el guardado si la propuesta deja sin ruta algún par puerta→edificio; el servidor lo revalida con `NetworkService`/`NetworkGraph`.
-
-### Arquitectura del módulo
-
-- `PHP/admin/editar-red.php` — vista, datos embebidos (`RED_INICIAL`, `RED_REVISION`, `RED_CSRF`, `RED_PAIRS`, `RED_METADATOS`).
-- `PHP/admin/getRed.php` — estado vigente.
-- `save-red.php` (raíz) — endpoint POST de guardado.
-- `PHP/services/NetworkService.php` — reglas E01–E08/W01–W06, asignación de IDs, diferencias, auditoría y pares de referencia.
-- `PHP/services/NetworkGraph.php` — port PHP de `buildGraph`, Dijkstra, componentes, extremos, aristas, métricas y alcanzabilidad.
-- `PHP/repositories/NetworkRepository.php` — v2, 409, respaldos, retención y `rename` atómico. Extiende `PathNetworkRepository`; el editor nunca usa `PathNetworkRepository::guardar()`.
-- `scripts/migrar_red_v2.php` — migración al formato v2 (CLI).
-- `js/network-analysis.js` — análisis topológico del cliente; requiere `js/geo-utils.js` y `js/pathfinding.js`.
-- `js/network-editor.js` — estado, capas, modos, dibujo, Geoman, lista/buscador, validación en vivo, guardar/descartar y `beforeunload`.
-- `css/red-editor.css` — layout sidebar/mapa, toolbar, leyenda, lista, badges, detalle y responsive.
-
-### Pruebas del módulo
-
-| Comando | Qué valida |
-|---|---|
+| `node tests/diagnostico-red.mjs` | Diagnóstico de la red (informe, sin umbral) |
 | `node tests/red/paridad-grafo.mjs` | Paridad JS/PHP del grafo y la alcanzabilidad (201 redes) |
 | `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella real, E01–E08, W01/W04/W05/W06, snapping y 348 pares |
-| `php tests/red/integridad-red.php` | Archivo ausente/corrupto/v1, respaldo, 409, IDs `tmp-` y retención de 30 respaldos |
-| `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + asignación de IDs y auditoría |
-| `powershell -File tests/red/seguridad-red.ps1` | 403/405/409/400 por HTTP, CSRF, límite de 2 MB y `PHP/data/`/respaldos inaccesibles (puerto 8021) |
+| `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
+| `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
+| `php tests/red/integridad-red.php` | Red ausente/corrupta/v1, respaldo, 409, IDs `tmp-`, retención de 30 |
+| `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + IDs y auditoría |
+| `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (servidor propio en 8019) |
+| `powershell -File tests/sesion-expirada.ps1` | S-10: sesión caducada/vigente (puerto 8020) |
+| `powershell -File tests/red/seguridad-red.ps1` | 403/405/409/400, CSRF, límite 2 MB y `database/` inaccesible (puerto 8021) |
+| `powershell -File tests/regresion-general.ps1` | Regresión del mapa público, datos intactos y CSRF de edificios (puerto 8000) |
 
-## Comportamiento toggle
+Los `.ps1` arrancan su propio servidor con `-t frontend router.php` (excepto `regresion-general`, que usa el servidor de `start-server.ps1` en el puerto 8000).
 
-- `js/main.js` línea 4: `USE_GPS_LOCATION = false` → simulación por beacons. `true` → GPS real (requiere HTTPS/localhost).
+`tests/_pruebas.php`, `tests/_validar-cadenas.php`, `tests/_escritor-concurrente.php` y `tests/red/_grafo-php.php` son soporte interno.
+
+**Incidencia preexistente:** `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan porque `caminitos.geojson` tiene 313 segmentos / 646 vértices y esperan 312 / 644 (`242` nodos / `314` aristas). No lo provoca la reestructuración; la red no se modifica desde los tests.
+
+## Router de desarrollo y protección
+
+- `router.php` (raíz) se usa con `php -S … -t frontend router.php`. Como `backend/`, `database/`, `DUMP/`, `scripts/`, `tests/` y `docs/` quedan fuera del document root, no se sirven; el router además bloquea esas rutas por URI y las extensiones sensibles (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`, `.lock`, `.md`), cualquier nombre con `.bak` y archivos/directorios ocultos.
+- Verificado en local: `/backend/*`, `/database/*`, `/DUMP/*`, `/PHP/*`, `/scripts/*`, `/tests/*`, `/docs/*` → 403.
+
+## Depuración de errores PHP
+
+- Errores ocultos por defecto. En local: `$env:APP_DEBUG='1'; .\start-server.ps1` (o `APP_DEBUG=1 php -S …`).
+- Las respuestas AJAX son siempre JSON; si llega HTML, el JS muestra «Respuesta inesperada del servidor».
+
+## Archivos que deben mantenerse fuera de GitHub
+
+- `php.ini`, `.env`, `*.local.php`, `*credenciales*`, `*secret*`
+- `database/runtime/` y `database/backups/`
+- Logs `*.log`, `server.err`, `*.lock`, `*.tmp.*`
+- `uso.md` (documentación local)
 
 ## Git
 
-- Cambio local no committeado: `js/main.js` path color `#ffffff` → `#ffffff00` (rutas transparentes).
+- Rama de trabajo de la reestructuración: `refactor/estructura`; plan y bitácora en `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md`.

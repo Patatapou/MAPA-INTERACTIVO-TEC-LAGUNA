@@ -1,8 +1,10 @@
 # Arquitectura de Persistencia Documental JSON
 
 **Proyecto:** Mapa Interactivo ITL  
-**Estado:** Planificación (sin implementar)  
-**Versión:** 1.0
+**Estado:** Implementado (capas de servicios, repositorios y almacenamiento en uso)  
+**Versión:** 1.1 — actualizada tras la reestructuración (`frontend/`, `backend/`, `database/`)
+
+> Rutas vigentes: el código PHP vive en `backend/`, los JSON privados en `database/runtime/`, los respaldos en `database/backups/` y el único directorio servido por HTTP es `frontend/`. Ver `AGENTS.md`.
 
 ---
 
@@ -38,31 +40,30 @@ Se eligió un sistema basado en archivos JSON por las siguientes razones:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    CAPA DE PRESENTACIÓN                      │
-│  index.html  ←→  PHP/admin/panel.php  ←→  PHP/public/        │
+│  frontend/index.html  ←→  backend/admin/panel.php            │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                    CAPA DE CONTROLADORES                      │
-│  login.php, saveEdificio.php, imagelist.php, panel.php       │
+│  backend/router.php · backend/admin/* · backend/api/*         │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                    CAPA DE SERVICIOS                          │
-│  AuthService, SuggestionService, SettingsService             │
+│  backend/services/{Auth,Suggestion,Settings}Service.php       │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                  CAPA DE REPOSITORIOS                         │
-│  UserRepository, SettingsRepository, AuditLogRepository       │
-│  SuggestionRepository                                         │
+│  backend/repositories/{User,Settings,AuditLog,Suggestion}…    │
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                  CAPA DE ALMACENAMIENTO                        │
-│  PHP/data/users.json                                          │
-│  PHP/data/settings.json                                       │
-│  PHP/data/audit-log.jsonl                                     │
-│  PHP/data/suggestions.json                                    │
+│  database/runtime/users.json                                  │
+│  database/runtime/settings.json                               │
+│  database/runtime/audit-log.jsonl                             │
+│  database/runtime/suggestions.json                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -107,42 +108,35 @@ flowchart TD
 ## 4. Estructura de Directorios
 
 ```
-PHP/
-├── public/
-│   ├── index.php          # Router (ya existe)
-│   ├── check-session.php  # Verificación de sesión (ya existe)
-│   ├── send-suggestion.php # Procesamiento de sugerencias (ya existe)
-│   ├── mapa.php           # Vista pública del mapa (ya existe)
-│   └── img/               # Imágenes de edificios (ya existe)
-├── admin/
-│   ├── login.php          # Autenticación (ya existe)
-│   ├── logout.php         # Cierre de sesión (ya existe)
-│   ├── panel.php          # Panel de administración (ya existe)
-│   ├── saveEdificio.php   # Guardado de edificios (ya existe)
-│   └── imagelist.php      # Listado de imágenes (ya existe)
-├── auth/
-│   ├── auth_middleware.php # Middleware de autenticación (ya existe)
-│   ├── csrf.php           # Protección CSRF (ya existe)
-│   └── rate_limit.php     # Rate limiting (ya existe)
-├── config/
-│   └── credenciales.php   # Credenciales hardcodeadas (ya existe)
-├── data/                  # NUEVO: capa de persistencia privada
-│   ├── users.json         # NUEVO: cuentas de administrador
-│   ├── settings.json      # NUEVO: configuración del sistema
-│   ├── audit-log.jsonl    # NUEVO: registro de auditoría
-│   └── suggestions.json   # NUEVO: sugerencias del mapa público
-└── services/              # NUEVO: capa de lógica de negocio
-    ├── AuthService.php    # NUEVO
-    ├── SuggestionService.php # NUEVO
-    └── SettingsService.php # NUEVO
-└── repositories/          # NUEVO: capa de persistencia
-    ├── UserRepository.php # NUEVO
-    ├── SettingsRepository.php # NUEVO
-    ├── AuditLogRepository.php # NUEVO
-    └── SuggestionRepository.php # NUEVO
+frontend/                     # document root (único servido por HTTP)
+├── index.html                # mapa público
+├── index.php                 # front controller: carga el bootstrap y el router
+├── data/                     # datos públicos que lee el navegador
+│   ├── datos.json
+│   ├── GeoTec.js
+│   └── caminitos.geojson
+├── css/ · js/ · img/ · tiles/
+
+backend/                      # PHP privado (no servido)
+├── bootstrap.php             # constantes de rutas + comprobación de carpetas
+├── router.php                # tabla de rutas `?p=`
+├── admin/                    # login · logout · panel · rutas · editores
+├── api/                      # endpoints JSON (kebab-case)
+├── auth/                     # auth_middleware · csrf · rate_limit
+├── services/                 # AuthService · SuggestionService · SettingsService
+│                             # BuildingService · RouteService · NetworkService…
+├── repositories/             # UserRepository · SettingsRepository
+│                             # AuditLogRepository · SuggestionRepository…
+└── views/404.php
+
+database/                     # almacenamiento privado (no servido)
+├── runtime/                  # users.json · settings.json · audit-log.jsonl
+│                             # suggestions.json · rutas.json
+├── backups/                  # respaldos (p. ej. backups/caminitos/)
+└── sources/                  # fuentes GIS del campus (.geojson)
 ```
 
-**Nota:** El directorio `PHP/data/` debe estar fuera del acceso HTTP directo (no bajo `PHP/public/`).
+**Nota:** `database/runtime/` está fuera del *document root* (`frontend/`), por lo que no es accesible por HTTP ni siquiera con el servidor embebido. `start-server.ps1` arranca `php -S 127.0.0.1:8000 -t frontend router.php`.
 
 ---
 
@@ -374,7 +368,7 @@ Los servicios encapsulan las reglas de negocio y coordenan los repositorios.
 - Las contraseñas se almacenan únicamente como hash generado con `password_hash()`.
 - Nunca se almacena la contraseña en texto plano.
 - Verificación con `password_verify()`.
-- `users.json` debe estar fuera del directorio público (`PHP/data/`, no `PHP/public/`).
+- `users.json` debe estar fuera del directorio público (`database/runtime/`, nunca en `frontend/`).
 
 ### 9.2 Validación del lado del servidor
 
@@ -396,8 +390,10 @@ Los servicios encapsulan las reglas de negocio y coordenan los repositorios.
 
 ### 9.5 Bloqueo de archivos privados
 
-- `PHP/data/` no está bajo `PHP/public/`, por lo que no es accesible directamente vía HTTP.
-- El servidor PHP integrado (`php -S`) sirve archivos según el root configurado; `PHP/data/` queda fuera del alcance.
+- `database/` (con `runtime/` y `backups/`) queda **fuera del document root** (`frontend/`), así que no es accesible por HTTP.
+- `start-server.ps1` arranca `php -S 127.0.0.1:8000 -t frontend router.php`; sin `-t frontend` los datos privados quedarían expuestos en local.
+- `router.php` añade una barrera extra: bloquea por URI `backend/`, `database/`, `DUMP/`, `scripts/`, `tests/`, `docs/` y las extensiones sensibles (`.bak`, `.jsonl`, `.log`, `.ini`, `.env`, `.tmp`, `.lock`, `.md`).
+- En producción, el servidor web (Apache/Nginx) debe apuntar su *document root* a `frontend/`.
 
 ### 9.6 Prevención de corrupción de datos
 
@@ -432,17 +428,20 @@ Los servicios encapsulan las reglas de negocio y coordenan los repositorios.
 
 ### 10.3 Copias de seguridad y recuperación
 
-- Los archivos JSON pueden copiarse manualmente como respaldo.
-- No se implementa respaldo automático en esta fase.
-- Procedimiento de recuperación: restaurar archivo JSON desde la copia de seguridad más reciente.
+- Los archivos JSON pueden copiarse manualmente como respaldo; `database/runtime/` y `database/backups/` no están en Git.
+- Respaldos automáticos ya existentes:
+  - `rutas.json.bak` junto a `rutas.json` antes de cada escritura.
+  - `GeoTec.js.bak` junto a `GeoTec.js` antes de sobrescribir.
+  - `database/backups/caminitos/` con los últimos 30 respaldos de la red (retención automática).
+- Procedimiento de recuperación: restaurar el archivo JSON desde el respaldo más reciente y volver a comprobar la integridad con las pruebas (`tests/`).
 
 ---
 
 ## 11. Relación con los datos del mapa (`datos.json`)
 
-- `datos.json` (raíz y `PHP/public/`) continúa almacenando información de edificios (nombre, descripción, aulas, imágenes).
-- **No se migra** `datos.json` al nuevo sistema de persistencia.
-- Los IDs de edificio en `users.json`, `settings.json` y `suggestions.json` hacen referencia a claves existentes en `datos.json` cuando corresponde (ej: `building_id` en sugerencias).
+- `datos.json` vive en `frontend/data/` (es público: lo lee el navegador y lo escribe PHP).
+- **No se migra** `datos.json` al sistema de persistencia privado.
+- Los IDs de edificio en `suggestions.json` y en `rutas.json` hacen referencia a claves existentes en `datos.json` cuando corresponde (ej: `building_id` en sugerencias, `origen.ref`/`destino.ref` en rutas).
 - Esto evita duplicar información y mantiene una única fuente de verdad para los datos del mapa.
 
 ---
@@ -472,12 +471,12 @@ La arquitectura está diseñada con Repository Pattern para facilitar sustituci�
 
 ---
 
-## 14. Decisiones que Requieren Aprobación
+## 14. Decisiones tomadas
 
-1. **Ubicación de `PHP/data/`:** ¿Está bien que esté fuera de `PHP/public/` pero dentro de `PHP/`?
-2. **Credenciales hardcodeadas:** El plan de migración (Documento 2) contempla moverlas a `users.json`. ¿Se aprueba este enfoque?
-3. **Formato JSONL para auditoría:** ¿Es aceptable para el volumen esperado, o se prefiere un archivo JSON tradicional?
-4. **Timeout de sesión:** Ya configurado en 2 horas en Etapa 2. ¿Se mantiene?
+1. **Ubicación de los datos privados:** resuelta → `database/runtime/`, fuera del *document root* (`frontend/`).
+2. **Credenciales hardcodeadas:** resuelto → `database/runtime/users.json` con `password_hash()`; `credenciales.php` quedó fuera de uso.
+3. **Formato JSONL para auditoría:** se mantiene `audit-log.jsonl` (una línea por evento).
+4. **Timeout de sesión:** se mantiene en 2 horas con expiración por inactividad.
 
 ---
 
@@ -485,14 +484,14 @@ La arquitectura está diseñada con Repository Pattern para facilitar sustituci�
 
 | Componente | Tipo | Ruta | Estado |
 |------------|------|------|--------|
-| UserRepository | Repositorio | `PHP/repositories/UserRepository.php` | Por crear |
-| SettingsRepository | Repositorio | `PHP/repositories/SettingsRepository.php` | Por crear |
-| AuditLogRepository | Repositorio | `PHP/repositories/AuditLogRepository.php` | Por crear |
-| SuggestionRepository | Repositorio | `PHP/repositories/SuggestionRepository.php` | Por crear |
-| AuthService | Servicio | `PHP/services/AuthService.php` | Por crear |
-| SuggestionService | Servicio | `PHP/services/SuggestionService.php` | Por crear |
-| SettingsService | Servicio | `PHP/services/SettingsService.php` | Por crear |
-| users.json | Almacenamiento | `PHP/data/users.json` | Por crear |
-| settings.json | Almacenamiento | `PHP/data/settings.json` | Por crear |
-| audit-log.jsonl | Almacenamiento | `PHP/data/audit-log.jsonl` | Por crear |
-| suggestions.json | Almacenamiento | `PHP/data/suggestions.json` | Por crear |
+| UserRepository | Repositorio | `backend/repositories/UserRepository.php` | Implementado |
+| SettingsRepository | Repositorio | `backend/repositories/SettingsRepository.php` | Implementado |
+| AuditLogRepository | Repositorio | `backend/repositories/AuditLogRepository.php` | Implementado |
+| SuggestionRepository | Repositorio | `backend/repositories/SuggestionRepository.php` | Implementado |
+| AuthService | Servicio | `backend/services/AuthService.php` | Implementado |
+| SuggestionService | Servicio | `backend/services/SuggestionService.php` | Implementado |
+| SettingsService | Servicio | `backend/services/SettingsService.php` | Implementado |
+| users.json | Almacenamiento | `database/runtime/users.json` | Implementado (fuera de Git) |
+| settings.json | Almacenamiento | `database/runtime/settings.json` | Implementado (fuera de Git) |
+| audit-log.jsonl | Almacenamiento | `database/runtime/audit-log.jsonl` | Implementado (fuera de Git) |
+| suggestions.json | Almacenamiento | `database/runtime/suggestions.json` | Implementado (fuera de Git) |

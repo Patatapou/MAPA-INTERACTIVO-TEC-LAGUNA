@@ -1,8 +1,9 @@
 # PLAN DE REESTRUCTURACIÓN DEL PROYECTO
 
-> **Estado:** propuesta para aprobación. No se ha movido ningún archivo.
+> **Estado:** ✅ completado sobre la rama `refactor/estructura`. Estructura nueva aplicada (`frontend/`, `backend/`, `database/`) y documentación cerrada (Etapa 7).
 > **Fecha:** 2026-11-16 · **Rama de trabajo sugerida:** `refactor/estructura` (parte de `develop`)
 > **Objetivo:** que se entienda de un vistazo qué es cada cosa (frontend, backend, datos), **sin cambiar el comportamiento** y manteniendo correctas todas las rutas que hoy usan PHP, HTML y JavaScript.
+> **Seguimiento:** el bloque «11.1 Lista de tareas por etapa» y el «Estado actual» indican por dónde se retoma tras una interrupción.
 
 ---
 
@@ -397,13 +398,68 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 > - Los archivos de cada etapa se mueven con `git mv`; los datos privados (`PHP/data/`) se mueven a mano porque están ignorados por Git.
 > - **Regla de borrado:** por indicación del usuario **no se elimina nada**. Todo lo obsoleto, legacy o inútil se mueve a `DUMP/` en la raíz.
 
+### 11.1 Lista de tareas por etapa
+
+> Índice rápido de avance. `[x]` hecho · `[ ]` pendiente · `[!]` incidencia (explicada debajo).
+> **Para retomar:** busca la primera casilla sin marcar de la etapa en curso (bloque «Estado actual») y continúa desde ahí; las tareas detalladas de cada etapa están más abajo, en esta misma sección.
+
+**E0 — Preparación y línea base**
+- [x] E0.1 Crear la rama `refactor/estructura`
+- [x] E0.2 Copiar `PHP/data/` fuera del repositorio
+- [x] E0.3 `php -l` sobre todos los `.php` y línea base de la lista de humo
+- [x] E0.4 Commit de la etapa
+
+**E1 — Constantes de rutas (sin mover nada)**
+- [x] E1.1 Crear el bootstrap con las constantes de rutas
+- [x] E1.2 Sustituir `dirname(__DIR__, n)` y las rutas relativas en PHP
+- [x] E1.3 Sustituir `require_once 'PHP/...'` por `BACKEND_PATH`
+- [x] E1.4 Verificar (`php -l`, 131 pruebas, humo) y commitear
+
+**E2 — Backend**
+- [x] E2.1 Mover `PHP/{admin,auth,repositories,services}` → `backend/`
+- [x] E2.2 Mover los endpoints a `backend/api/` en kebab-case
+- [x] E2.3 Extraer el router a `backend/router.php` y adelgazar `index.php`
+- [x] E2.4 Crear `backend/views/404.php` y actualizar JS y pruebas
+- [x] E2.5 Verificar (131 pruebas, regresión 24/24, S-01…S-10) y commitear
+
+**E3 — Base de datos privada**
+- [x] E3.1 Crear `DUMP/` y mover allí el legacy (`PHP/public`, `procesar.php`, respaldos)
+- [x] E3.2 Mover `PHP/data/*` a mano → `database/runtime/` (y respaldos → `database/backups/`)
+- [x] E3.3 Mover las fuentes GIS a `database/sources/`
+- [x] E3.4 Apuntar `RUNTIME_PATH`/`BACKUPS_PATH`, actualizar `.gitignore`, scripts y pruebas
+- [x] E3.5 Verificar (login, sugerencia, auditoría, 111 pruebas, seguridad) y commitear
+
+**E4 — Frontend y *document root***
+- [x] E4.1 Crear `frontend/` y mover `index.html`, `index.php`, `img/` y `css/`
+- [x] E4.2 Reorganizar `css/` (`public.css`, `admin/`, `vendor/`) y `js/` (`public/`, `shared/`, `admin/`, `vendor/`)
+- [x] E4.3 Mover `datos.json`, `GeoTec.js`, `caminitos.geojson` → `frontend/data/` y teselas → `frontend/tiles/satelital/`
+- [x] E4.4 Actualizar `index.html`, `js/public/main.js`, los 4 editores y las vistas del panel
+- [x] E4.5 Apuntar `PUBLIC_DATA_PATH`/`IMG_PATH`; `-t frontend` en `start-server.ps1` y en los 3 `.ps1` de pruebas
+- [x] E4.6 Actualizar `router.php` y las pruebas con las rutas nuevas
+- [x] E4.7 Verificar humo 7.1, seguridad 7.2 y navegador (mapa, panel y 4 editores) y commitear
+
+**E5 — Limpieza legacy → `DUMP/`**
+- [x] E5.1 Mover `mapa.php` y `css/styles.css` a `DUMP/`
+- [x] E5.2 Limpiar referencias y retirar residuos (carpeta `PHP/` vacía, lock huérfano)
+- [x] E5.3 Verificar y commitear
+
+**E6 — Teselas con nombre limpio**
+- [x] E6.1 Absorbida por E4 (`frontend/tiles/satelital/`, sin espacios ni doble barra)
+
+**E7 — Documentación**
+- [x] E7.1 Reescribir `AGENTS.md` con la estructura, las rutas y las URLs nuevas
+- [x] E7.2 Actualizar `README.md`
+- [x] E7.3 Actualizar `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md`
+- [x] E7.4 Marcar los documentos históricos (`docs/plans/`, `docs/analysis/`) y revisar que los vigentes no citen rutas antiguas
+- [x] E7.5 Cerrar el checklist y commitear
+
 ### Estado actual
 
 | Campo | Valor |
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
-| Etapa en curso | Etapa 7 — Documentación (Etapas 0–5 completadas; Etapa 6 absorbida por la 4) |
-| Último commit de etapa | `135d487` (Etapa 5) |
+| Etapa en curso | Ninguna — **plan completado** (Etapas 0–5 y 7 cerradas; Etapa 6 absorbida por la 4) |
+| Último commit de etapa | `—` (Etapa 7 pendiente de commitear en esta sesión) |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -486,11 +542,13 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 - [x] Absorbida por la Etapa 4 (`frontend/tiles/satelital/`, sin espacios ni doble barra)
 
 ### Etapa 7 — Documentación
-- [ ] Actualizar `AGENTS.md` (estructura, URLs, comandos, regla «no tocar `database/`»)
-- [ ] Actualizar `README.md`
-- [ ] Actualizar `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md`
-- [ ] Revisar que ningún documento describa rutas antiguas
-- [ ] Cerrar este checklist con el estado final y el commit de cierre
+- [x] Actualizar `AGENTS.md` (estructura, URLs, comandos, regla «no tocar `database/`»)
+- [x] Actualizar `README.md`
+- [x] Actualizar `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md`
+- [x] Revisar que ningún documento describa rutas antiguas
+- [x] Cerrar este checklist con el estado final y el commit de cierre
+- Nota: los 6 planes de `docs/plans/` y `docs/analysis/HALLAZGOS_MODULO_RUTAS.md` llevan una nota de «Documento histórico»; `AGENTS.md`, `README.md` y `docs/architecture/` son los documentos vigentes.
+- Verificación: regresión general, `seguridad-rutas`, `sesion-expirada` y `red/seguridad-red` → `TODO OK`; assets públicos 200; `/backend`, `/database`, `/DUMP`, `/PHP`, `/scripts`, `/tests`, `/docs` → 403.
 
 ### Bitácora
 
@@ -502,3 +560,4 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | 2026-11-18 | 3 | `3795a06` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
 | 2026-11-18 | 4 | `0d9ca27` | `frontend/` como *document root* (HTML, `css/{public,admin,vendor}`, `js/{public,shared,admin,vendor}`, `img/`, `tiles/satelital/`, `data/`); `-t frontend` en servidor y pruebas; mapa, panel, editores y módulo de rutas verificados en el navegador |
 | 2026-11-18 | 5 | `135d487` | `mapa.php` y `css/styles.css` movidos a `DUMP/`; fuera la carpeta vacía `PHP/` y el lock huérfano; sin referencias legacy en código; humo y seguridad en verde |
+| 2026-11-19 | 7 | `—` | `AGENTS.md` y `README.md` reescritos con la estructura nueva; `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md` al día; nota de «Documento histórico» en los 7 documentos antiguos; sin rutas legacy en documentos vigentes; regresión, seguridad de rutas, sesión y red en verde |

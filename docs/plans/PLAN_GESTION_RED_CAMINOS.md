@@ -1,5 +1,7 @@
 # PLAN DE IMPLEMENTACIÓN — GESTIÓN DE LA RED DE CAMINOS
 
+> **Documento histórico.** Describe el estado previo a la reestructuración: las rutas `PHP/…`, `index.html` en la raíz y los endpoints sueltos ya no existen. Para la estructura y las rutas vigentes, ver `AGENTS.md` y `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md`.
+
 > **Estado:** ✅ implementado y verificado (E0–E6 completadas).
 > **Fecha:** 2026-11-16 · **Rama de trabajo:** `RaMaik`
 > **Relación con otros documentos:**

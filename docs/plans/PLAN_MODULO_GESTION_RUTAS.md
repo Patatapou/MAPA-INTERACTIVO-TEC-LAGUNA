@@ -1,5 +1,7 @@
 # PLAN DE IMPLEMENTACIÓN — MÓDULO DE VISUALIZACIÓN Y GESTIÓN DE RUTAS
 
+> **Documento histórico.** Describe el estado previo a la reestructuración: las rutas `PHP/…`, `index.html` en la raíz y los endpoints sueltos ya no existen. Para la estructura y las rutas vigentes, ver `AGENTS.md` y `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md`.
+
 > **Estado:** planificación. **No implementado.**
 > **Fecha:** 2026-11-14
 > **Proyecto:** Mapa Interactivo ITL — TecNM Campus Laguna
