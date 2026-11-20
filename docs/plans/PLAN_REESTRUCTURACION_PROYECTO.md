@@ -459,7 +459,7 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 |---|---|
 | Rama de trabajo | `refactor/estructura` (creada desde `RaMaik`, que equivale a `develop`) |
 | Etapa en curso | Ninguna — **plan completado** (Etapas 0–5 y 7 cerradas; Etapa 6 absorbida por la 4) |
-| Último commit de etapa | `—` (Etapa 7 pendiente de commitear en esta sesión) |
+| Último commit de etapa | `75fa658` (Etapa 7) |
 | Decisiones aplicadas | D1 = A · D2 = mover a `DUMP/` (no borrar) · D3 = renombrar teselas · D4 = sin `workers/` · D5 = kebab-case · D6 = raíz · D7 = reestructurar primero |
 | Incidencias abiertas | `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan por desfase **preexistente**: `caminitos.geojson` en `HEAD` tiene 313 segmentos / 646 vértices, mientras los tests esperan 312 / 644. No lo provoca la reestructuración; no se modifica la red. |
 
@@ -560,4 +560,4 @@ git grep -n -E "(datos\.json|caminitos\.geojson|GeoTec\.js|check-session\.php|se
 | 2026-11-18 | 3 | `3795a06` | `DUMP/` con el legacy; datos privados en `database/runtime` y respaldos en `database/backups`; fuentes GIS en `database/sources`; sugerencia real y auditoría verificadas |
 | 2026-11-18 | 4 | `0d9ca27` | `frontend/` como *document root* (HTML, `css/{public,admin,vendor}`, `js/{public,shared,admin,vendor}`, `img/`, `tiles/satelital/`, `data/`); `-t frontend` en servidor y pruebas; mapa, panel, editores y módulo de rutas verificados en el navegador |
 | 2026-11-18 | 5 | `135d487` | `mapa.php` y `css/styles.css` movidos a `DUMP/`; fuera la carpeta vacía `PHP/` y el lock huérfano; sin referencias legacy en código; humo y seguridad en verde |
-| 2026-11-19 | 7 | `—` | `AGENTS.md` y `README.md` reescritos con la estructura nueva; `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md` al día; nota de «Documento histórico» en los 7 documentos antiguos; sin rutas legacy en documentos vigentes; regresión, seguridad de rutas, sesión y red en verde |
+| 2026-11-19 | 7 | `75fa658` | `AGENTS.md` y `README.md` reescritos con la estructura nueva; `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md` al día; nota de «Documento histórico» en los 7 documentos antiguos; sin rutas legacy en documentos vigentes; regresión, seguridad de rutas, sesión y red en verde |
