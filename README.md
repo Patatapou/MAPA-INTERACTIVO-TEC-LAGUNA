@@ -17,9 +17,8 @@ Mapa enfocado en apoyar a estudiantes de nuevo ingreso y visitantes con la local
 | `database/` | JSON privado (`runtime/`), respaldos (`backups/`) y fuentes GIS (`sources/`) | No |
 | `scripts/` | Migraciones CLI de la red de caminos | No |
 | `tests/` | Pruebas sin dependencias (`node` y `php`) | No |
-| `DUMP/` | Material legacy conservado (no se usa ni se sirve) | No |
 
-Detalle completo en [`AGENTS.md`](AGENTS.md).
+`docs/` y `DUMP/` no forman parte del repositorio de GitHub. `DUMP/` era material legacy y fue retirado; la documentación de trabajo se mantiene fuera del repositorio. La guía técnica disponible en el repositorio está en [`AGENTS.md`](AGENTS.md).
 
 ## Requisitos
 
@@ -38,7 +37,7 @@ Lanza `php -S 127.0.0.1:8000 -t frontend router.php` y escucha **solo** en local
 - Mapa: <http://127.0.0.1:8000/index.html>
 - Panel: <http://127.0.0.1:8000/index.php?p=login>
 
-Credenciales iniciales del panel: `admin` / `123456` (se cambian desde `database/runtime/users.json` con `password_hash()`).
+Las cuentas del panel se gestionan en `database/runtime/users.json`; este archivo es local y no se versiona.
 
 Detener el servidor: `Ctrl+C`.
 
@@ -85,5 +84,4 @@ powershell -File tests/red/seguridad-red.ps1
 ## Documentación
 
 - `AGENTS.md` — arquitectura, rutas, convenciones y pruebas.
-- `docs/architecture/ARQUITECTURA_PERSISTENCIA_JSON.md` — capa de persistencia JSON.
-- `docs/plans/PLAN_REESTRUCTURACION_PROYECTO.md` — plan y bitácora de la reestructuración.
+- `docs/` y `DUMP/` están excluidos de GitHub; no se deben referenciar como documentación disponible en el repositorio.
