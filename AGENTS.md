@@ -11,7 +11,7 @@ frontend/            document root: lo único que se sirve por HTTP
   css/public.css     estilos del mapa público
   css/admin/         panel, login, editor de geometrías, rutas y editor de red
   css/vendor/        Leaflet-Geoman (vendorizado)
-  js/public/         main.js, beacons-simulation.js
+  js/public/         main.js, config.js, beacons-simulation.js
   js/shared/         geo-utils.js, pathfinding.js
   js/admin/          editor, rutas-admin, ruta-editor, network-analysis, network-editor
   js/vendor/         Leaflet-Geoman (vendorizado)
@@ -67,8 +67,6 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 | Ruta | Archivo | Auth |
 |---|---|---|
 | `?p=login` | `backend/admin/login.php` | público (CSRF + rate limit) |
-| `?p=check-session` | `backend/api/check-session.php` | público |
-| `?p=send-suggestion` | `backend/api/send-suggestion.php` | público (CSRF + anti-spam) |
 | `?p=editar[&editar=<id>]` | `backend/admin/panel.php` | sí (+ CSRF en el form) |
 | `?p=logout` | `backend/admin/logout.php` | sí |
 | `?p=editar-geometria&accion=nuevo\|editar&id=` | `backend/admin/editar-geometria.php` | sí |
@@ -92,19 +90,18 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 
 - Leaflet 1.9.4 desde unpkg CDN — requiere internet. Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
 - Leaflet-Geoman vendorizado en `frontend/js/vendor/leaflet-geoman/` y `frontend/css/vendor/leaflet-geoman/` (sin CDN).
-- Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/main.js`.
+- Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/config.js` → `js/public/main.js`.
 - `js/public/main.js`: `USE_GPS_LOCATION = false` → simulación por beacons; `true` → GPS real (requiere HTTPS/localhost).
 - Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`.
 - Cada edificio muestra un círculo blanco con su ID y tooltip con el nombre. Las geometrías usan `smoothFactor: 0` (mapa, editor y capa de referencia); con el valor por defecto las huellas con muchos vértices se veían como cuadrados.
 
-### Botón ⚙️ y sugerencias
+### Botón «Sugerir cambios»
 
-- Botón junto al control «Centrar» (arriba-derecha). Consulta `index.php?p=check-session`.
-- Sin permisos: modal de sugerencias (edificio, descripción, correo opcional) + botón «Iniciar sesión como administrador». Envía a `index.php?p=send-suggestion`.
-- Admin con sesión: redirige a `index.php?p=editar`. Sesión expirada: a login.
-- La comprobación se hace en PHP, no solo en JS.
+- Botón junto al control «Centrar» (arriba-derecha). Es un enlace externo: abre `SUGGESTION_FORM_URL` (`js/public/config.js`) en una pestaña nueva con `rel="noopener noreferrer"`.
+- Si `SUGGESTION_FORM_URL` está vacía, el botón se oculta. El mapa público **no** tiene formulario propio ni llama a PHP.
+- `backend/api/check-session.php` y `backend/api/send-suggestion.php` se conservan sin uso (decisión U-D5) y ya no están en `backend/router.php`.
 
-### Correo de sugerencias
+### Correo de sugerencias (código conservado, sin ruta)
 
 - `backend/api/send-suggestion.php` usa `mail()` con el resultado real (no simula éxito) y guarda en `database/runtime/suggestions.json`.
 - Destinatario fijo: `migel2013+mapa@outlook.com`.
@@ -238,7 +235,7 @@ Editor gráfico de `frontend/data/caminitos.geojson`. No altera `dijkstra`, `bui
 - `schema_version: 2`, `revision` (entero monotónico) y `next_seq`.
 - IDs históricos `seg-<8hex>` (y `seg-<8hex>-NN`) se conservan porque los usa `rutas.json`; los nuevos son `seg-<6 dígitos>` desde `next_seq`; los no guardados son `tmp-…` y el servidor los renumera.
 - Migración única: `php scripts/migrar_red_v2.php --apply` (idempotente). No confundir con `scripts/migrar_red_caminos.php` (normaliza topología).
-- Cada guardado deja respaldo en `database/backups/caminitos/` (retención 30). Escritura con `flock`, temporal y `rename` atómico; lectura **fail-closed**.
+- Cada guardado deja respaldo en `database/backups/caminitos/` (retención 30). Escritura con `flock`, temporal y `rename` atómico; lectura **fail-closed**. El archivo de bloqueo vive en `database/runtime/locks/` (nunca dentro de `frontend/`): `NetworkRepository` acepta un directorio de bloqueos propio en pruebas.
 
 ### Vista y modos
 
@@ -271,27 +268,35 @@ Normaliza extremos compartidos, asigna IDs estables, conserva `properties` e IDs
 
 ## Pruebas (sin PHPUnit ni Composer)
 
+Comando único (multiplataforma): `node scripts/verificar.mjs`. Ejecuta `php -l` sobre todo el PHP, la batería PHP y Node, y `tests/publicacion.mjs`; devuelve 0 solo si todo pasa. Con `--rapido`, la paridad de grafo usa 25 redes aleatorias en vez de 200. En un clon limpio crea vacías `database/runtime/` y `database/backups/` (están en `.gitignore`); no escribe datos reales.
+
 | Comando | Qué valida |
 |---|---|
-| `node tests/grafo-huella.mjs --geometria` | Huella del grafo: `nodos=241 aristas=312 grado1=20 componentes=1 rutas=348/348` y geometría `312/644` |
+| `node scripts/verificar.mjs` | Comando único: sintaxis, batería PHP/Node y sitio publicable |
+| `node tests/publicacion.mjs` | Sitio publicable: sin PHP salvo `index.php`, sin privados, recursos relativos existentes, datos y IDs coherentes |
+| `node tests/grafo-huella.mjs --geometria` | Invariantes del grafo calculadas del archivo (hoy `nodos=242 aristas=314 grado1=20 componentes=1 rutas=348/348`, geometría `313/646`); con `--geometria`, valida cada segmento |
 | `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
 | `node tests/diagnostico-red.mjs` | Diagnóstico de la red (informe, sin umbral) |
 | `node tests/red/paridad-grafo.mjs` | Paridad JS/PHP del grafo y la alcanzabilidad (201 redes) |
-| `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella real, E01–E08, W01/W04/W05/W06, snapping y 348 pares |
+| `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella calculada del archivo, E01–E08, W01/W04/W05/W06, snapping y 6 × edificios pares |
 | `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
 | `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
-| `php tests/red/integridad-red.php` | Red ausente/corrupta/v1, respaldo, 409, IDs `tmp-`, retención de 30 |
+| `php tests/red/integridad-red.php` | Red ausente/corrupta/v1, respaldo, 409, IDs `tmp-`, retención de 30, bloqueo en directorio privado |
 | `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + IDs y auditoría |
 | `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (servidor propio en 8019) |
 | `powershell -File tests/sesion-expirada.ps1` | S-10: sesión caducada/vigente (puerto 8020) |
 | `powershell -File tests/red/seguridad-red.ps1` | 403/405/409/400, CSRF, límite 2 MB y `database/` inaccesible (puerto 8021) |
 | `powershell -File tests/regresion-general.ps1` | Regresión del mapa público, datos intactos y CSRF de edificios (puerto 8000) |
 
-Los `.ps1` arrancan su propio servidor con `-t frontend router.php` (excepto `regresion-general`, que usa el servidor de `start-server.ps1` en el puerto 8000).
+Los `.ps1` arrancan su propio servidor con `-t frontend router.php` (excepto `regresion-general`, que usa el servidor de `start-server.ps1` en el puerto 8000). No forman parte de `verificar.mjs` porque necesitan servidor HTTP.
 
 `tests/_pruebas.php`, `tests/_validar-cadenas.php`, `tests/_escritor-concurrente.php` y `tests/red/_grafo-php.php` son soporte interno.
 
-**Incidencia preexistente:** `tests/grafo-huella.mjs --geometria` y `tests/red/analisis-cliente.mjs` fallan porque `caminitos.geojson` tiene 313 segmentos / 646 vértices y esperan 312 / 644 (`242` nodos / `314` aristas). No lo provoca la reestructuración; la red no se modifica desde los tests.
+**Expectativas de red (resuelto en la Fase 0):** `grafo-huella` y `analisis-cliente` ya no fijan 312/644/241/312; calculan las cifras de `caminitos.geojson` y comprueban invariantes (conexión, alcanzabilidad y coherencia), así que no vuelven a caducar cuando la red crece.
+
+**Dependencia de datos reales:** `verificar.mjs` no lee `database/runtime/` ni `database/backups/`; solo necesita que las carpetas existan (las crea vacías si faltan). Las pruebas PHP usan directorios temporales. Los `.ps1` de HTTP sí usan el `users.json` real y el servidor local, por eso quedan fuera del comando único.
+
+**Integración continua:** `.github/workflows/ci.yml` ejecuta `node scripts/verificar.mjs` en cada `push` y `pull_request` con PHP 8.4 y Node LTS.
 
 ## Router de desarrollo y protección
 

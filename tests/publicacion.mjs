@@ -1,0 +1,222 @@
+// ==========================================
+// PRUEBA DE SITIO PUBLICABLE
+// ==========================================
+// Verifica que `frontend/` pueda publicarse como sitio estático en GitHub
+// Pages sin filtrar archivos privados y sin depender de PHP.
+//
+// Uso:
+//   node tests/publicacion.mjs
+//
+// Código de salida: 0 si el sitio es publicable; 1 si algo falla.
+
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+import { fileURLToPath } from 'node:url';
+
+const aquí = path.dirname(fileURLToPath(import.meta.url));
+const raíz = path.resolve(aquí, '..');
+const frontend = path.join(raíz, 'frontend');
+
+let pruebas = 0;
+let fallos = 0;
+
+function comprobar(descripcion, condicion, detalle = '') {
+    pruebas += 1;
+    if (condicion) {
+        console.log('  ok    ' + descripcion);
+        return;
+    }
+    fallos += 1;
+    console.log('  FALLA ' + descripcion + (detalle ? ' → ' + detalle : ''));
+}
+
+function listarArchivos(omitirDir = []) {
+    const salida = [];
+    const pila = [frontend];
+
+    while (pila.length > 0) {
+        const actual = pila.pop();
+        for (const entrada of fs.readdirSync(actual, { withFileTypes: true })) {
+            const absoluta = path.join(actual, entrada.name);
+            const relativa = path.relative(frontend, absoluta).split(path.sep).join('/');
+
+            if (entrada.isDirectory()) {
+                if (!omitirDir.includes(relativa)) pila.push(absoluta);
+            } else if (entrada.isFile()) {
+                salida.push(relativa);
+            }
+        }
+    }
+
+    return salida.sort();
+}
+
+function leer(relativa) {
+    return fs.readFileSync(path.join(frontend, relativa), 'utf8');
+}
+
+function esExterno(valor) {
+    return /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(valor);
+}
+
+function normalizar(valor) {
+    return valor.split(/[?#]/)[0];
+}
+
+function existeArchivo(relativa) {
+    const ruta = path.join(frontend, relativa);
+    return fs.existsSync(ruta) && fs.statSync(ruta).isFile();
+}
+
+console.log('\n[1] Archivos que se publican');
+const archivosSinImagenes = listarArchivos(['img', 'tiles']);
+const php = archivosSinImagenes.filter((f) => f.endsWith('.php'));
+comprobar('el único .php es index.php', php.every((f) => f === 'index.php'), php.join(', '));
+
+// ---------- 2. Nada privado ----------
+const todos = listarArchivos();
+const privados = todos.filter((f) => {
+    const base = f.split('/').pop() || '';
+    return /\.bak(?:$|[-.])/i.test(base)
+        || /\.lock$/i.test(base)
+        || /\.tmp/i.test(base)
+        || /\.log$/i.test(base)
+        || base === '.env'
+        || base === 'users.json'
+        || /\.local\.php$/i.test(base);
+});
+comprobar('sin respaldos, bloqueos, temporales, logs ni datos privados', privados.length === 0,
+    privados.slice(0, 8).join(', '));
+
+// ---------- 3. Recursos referenciados ----------
+const html = leer('index.html');
+const referencias = [];
+
+for (const coincidencia of html.matchAll(/(?:src|href)\s*=\s*["']([^"']+)["']/gi)) {
+    referencias.push({ origen: 'index.html', valor: coincidencia[1] });
+}
+
+const jsPublicos = todos.filter((f) => /^js\/(?:public|shared)\//.test(f));
+for (const archivo of jsPublicos) {
+    const contenido = leer(archivo);
+    for (const coincidencia of contenido.matchAll(/fetch\s*\(\s*['"`]([^'"`]+)['"`]/g)) {
+        referencias.push({ origen: archivo, valor: coincidencia[1] });
+    }
+}
+
+const inexistentes = [];
+for (const referencia of referencias) {
+    if (esExterno(referencia.valor)) continue;
+    const relativa = normalizar(referencia.valor).replace(/^\/+/, '');
+    if (relativa === '' || !existeArchivo(relativa)) {
+        inexistentes.push(`${referencia.origen}: ${referencia.valor}`);
+    }
+}
+comprobar('todos los recursos relativos existen', inexistentes.length === 0,
+    inexistentes.slice(0, 8).join(', '));
+
+// ---------- 4. Sin rutas absolutas ----------
+const absolutas = [];
+for (const referencia of referencias) {
+    if (referencia.valor.startsWith('/') && !referencia.valor.startsWith('//')) {
+        absolutas.push(`${referencia.origen}: ${referencia.valor}`);
+    }
+}
+
+const hojas = todos.filter((f) => /\.css$/i.test(f) && f.startsWith('css/'));
+for (const archivo of hojas) {
+    for (const coincidencia of leer(archivo).matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/gi)) {
+        const valor = coincidencia[1].trim();
+        if (valor.startsWith('/') && !valor.startsWith('//')) {
+            absolutas.push(`${archivo}: ${valor}`);
+        }
+    }
+}
+
+for (const archivo of jsPublicos) {
+    const contenido = leer(archivo);
+    const patron = /(?:fetch|src|href)\s*[(=:]\s*['"`](\/[^/][^'"`]*)['"`]/g;
+    for (const coincidencia of contenido.matchAll(patron)) {
+        absolutas.push(`${archivo}: ${coincidencia[1]}`);
+    }
+}
+comprobar('sin rutas absolutas en HTML, CSS ni JS públicos', absolutas.length === 0,
+    absolutas.slice(0, 8).join(', '));
+
+// ---------- 5. Sin referencias a index.php ----------
+const conPhp = [];
+for (const archivo of ['index.html', ...jsPublicos]) {
+    if (leer(archivo).includes('index.php')) conPhp.push(archivo);
+}
+comprobar('el sitio público no menciona index.php', conPhp.length === 0, conPhp.join(', '));
+
+// ---------- 6. Datos válidos ----------
+let datos = null;
+let caminitos = null;
+let geotec = null;
+
+try {
+    datos = JSON.parse(leer('data/datos.json'));
+    comprobar('datos.json es JSON válido', typeof datos === 'object' && datos !== null);
+} catch (error) {
+    comprobar('datos.json es JSON válido', false, error.message);
+}
+
+try {
+    caminitos = JSON.parse(leer('data/caminitos.geojson'));
+    comprobar('caminitos.geojson es una FeatureCollection',
+        caminitos && caminitos.type === 'FeatureCollection' && Array.isArray(caminitos.features));
+} catch (error) {
+    comprobar('caminitos.geojson es una FeatureCollection', false, error.message);
+}
+
+try {
+    const contexto = {};
+    vm.runInNewContext(leer('data/GeoTec.js'), contexto, { filename: 'GeoTec.js', timeout: 10000 });
+    geotec = contexto.datosTec;
+    comprobar('GeoTec.js expone datosTec con features',
+        geotec && Array.isArray(geotec.features) && geotec.features.length > 0);
+} catch (error) {
+    comprobar('GeoTec.js expone datosTec con features', false, error.message);
+}
+
+// ---------- 7. IDs coincidentes ----------
+if (datos && geotec && Array.isArray(geotec.features)) {
+    const clavesDatos = Object.keys(datos).sort();
+    const idsGeotec = [...new Set(geotec.features
+        .map((f) => (f.properties && f.properties.id != null ? String(f.properties.id) : null))
+        .filter((id) => id !== null))].sort();
+
+    const faltanEnGeotec = clavesDatos.filter((id) => !idsGeotec.includes(id));
+    const faltanEnDatos = idsGeotec.filter((id) => !clavesDatos.includes(id));
+
+    comprobar('los IDs de datos.json y GeoTec.js coinciden uno a uno',
+        faltanEnGeotec.length === 0 && faltanEnDatos.length === 0,
+        `sin geometría: ${faltanEnGeotec.join(', ') || '—'}; sin metadatos: ${faltanEnDatos.join(', ') || '—'}`);
+}
+
+// ---------- 8. Imágenes existentes ----------
+if (datos) {
+    const imagenesAusentes = [];
+    let imagenes = 0;
+
+    for (const [id, metadatos] of Object.entries(datos)) {
+        const lista = metadatos && Array.isArray(metadatos.imagenes) ? metadatos.imagenes : [];
+        for (const valor of lista) {
+            if (typeof valor !== 'string' || valor.trim() === '') continue;
+            imagenes += 1;
+            const relativa = normalizar(valor.trim()).replace(/^\/+/, '');
+            if (!existeArchivo(relativa)) imagenesAusentes.push(`${id}: ${valor}`);
+        }
+    }
+
+    comprobar(`las ${imagenes} imágenes de datos.json existen`,
+        imagenesAusentes.length === 0, imagenesAusentes.slice(0, 8).join(', '));
+}
+
+console.log('\n' + (fallos === 0
+    ? `OK: ${pruebas} comprobaciones correctas. El sitio es publicable.`
+    : `FALLOS: ${fallos} de ${pruebas} comprobaciones.`) + '\n');
+
+process.exit(fallos === 0 ? 0 : 1);

@@ -3,8 +3,8 @@
 // ==========================================
 // Carga `js/geo-utils.js`, `js/pathfinding.js` y `js/network-analysis.js`
 // sobre la red real y comprueba:
-//   1. La huella del grafo (241 nodos, 312 aristas, 20 extremos, 1 componente).
-//   2. La coincidencia con las cifras del servidor (`NetworkGraph`).
+//   1. La huella del grafo, calculada del propio archivo (no fija).
+//   2. La coincidencia entre el análisis, el grafo y el archivo.
 //   3. Un caso sintético por cada error E01–E05 y E08.
 //   4. Un caso sintético por cada advertencia W01, W04, W05 y W06.
 //
@@ -23,7 +23,7 @@ const contexto = { console };
 contexto.globalThis = contexto;
 vm.createContext(contexto);
 
-for (const archivo of ['frontend/js/shared/geo-utils.js', 'frontend/js/shared/pathfinding.js', 'frontend/js/admin/network-analysis.js']) {
+for (const archivo of ['frontend/js/shared/geo-utils.js', 'frontend/js/shared/pathfinding.js', 'frontend/js/admin/network-analysis.js', 'frontend/data/GeoTec.js']) {
     const ruta = path.join(raíz, archivo);
     vm.runInContext(fs.readFileSync(ruta, 'utf8'), contexto, { filename: archivo });
 }
@@ -59,22 +59,41 @@ function feature(id, coords) {
     };
 }
 
-// ---------- 1. Huella real ----------
+// ---------- 1. Huella real (calculada del archivo) ----------
 const analisis = contexto.redAnalizarRed(red, { redVigente: red, pares: [] });
+const grafo = contexto.redGrafo(red);
+const nodosGrafo = Object.keys(grafo || {});
+const aristasGrafo = new Set();
+let grado1Grafo = 0;
+
+for (const nodo of nodosGrafo) {
+    const vecinos = Object.keys(grafo[nodo] || {});
+    if (vecinos.length === 1) grado1Grafo += 1;
+    for (const vecino of vecinos) {
+        aristasGrafo.add(nodo < vecino ? `${nodo}|${vecino}` : `${vecino}|${nodo}`);
+    }
+}
 
 console.log('\n[1] Huella de la red real');
 comprobar('el análisis no produce errores', analisis.errores.length === 0,
     JSON.stringify(analisis.errores));
-comprobar('241 nodos', analisis.metricas.nodos === 241, String(analisis.metricas.nodos));
-comprobar('312 aristas', analisis.metricas.aristas === 312, String(analisis.metricas.aristas));
-comprobar('20 extremos de grado 1', analisis.metricas.grado1 === 20, String(analisis.metricas.grado1));
+comprobar('los nodos coinciden con el grafo', analisis.metricas.nodos === nodosGrafo.length,
+    `${analisis.metricas.nodos} frente a ${nodosGrafo.length}`);
+comprobar('las aristas coinciden con el grafo', analisis.metricas.aristas === aristasGrafo.size,
+    `${analisis.metricas.aristas} frente a ${aristasGrafo.size}`);
+comprobar('los extremos de grado 1 coinciden con el grafo',
+    analisis.metricas.grado1 === grado1Grafo,
+    `${analisis.metricas.grado1} frente a ${grado1Grafo}`);
 comprobar('1 componente', analisis.metricas.componentes === 1, String(analisis.metricas.componentes));
 comprobar('el texto de la leyenda usa el mismo grafo', contexto.redGrafo(red) !== null);
 
-// ---------- 2. Cifras de referencia del servidor ----------
+// ---------- 2. Cifras de referencia del archivo ----------
 console.log('\n[2] Cifras del contrato');
-comprobar('312 features', red.features.length === 312, String(red.features.length));
-comprobar('644 vértices', red.features.reduce((n, f) => n + f.geometry.coordinates.length, 0) === 644);
+const featuresRed = red.features.length;
+const verticesRed = red.features.reduce((n, f) => n + f.geometry.coordinates.length, 0);
+comprobar('la red tiene segmentos', featuresRed > 0, String(featuresRed));
+comprobar('cada segmento tiene al menos dos vértices', verticesRed >= featuresRed * 2,
+    `features=${featuresRed}, vertices=${verticesRed}`);
 comprobar('todos los IDs tienen formato definitivo',
     red.features.every((f) => /^seg-(?:[a-f0-9]{8}(?:-\d{2})?|\d{6})$/.test(f.properties.id)));
 
@@ -182,11 +201,14 @@ const medio = contexto.redAjustarPuntoARed(25.53005, -103.43575, vigente.feature
 comprobar('el snapping devuelve un punto sobre el segmento',
     medio && medio.tipo === 'segmento', JSON.stringify(medio));
 
-// ---------- 7. Rendimiento con 348 pares ----------
+// ---------- 7. Rendimiento con todos los pares puerta → edificio ----------
 console.log('\n[7] Análisis completo con pares');
 const nodos = Object.keys(contexto.redGrafo(red));
+const edificios = (contexto.datosTec.features || [])
+    .filter((f) => f.properties && f.properties.id).length;
+const paresEsperados = 6 * edificios;
 const paresReales = [];
-for (let i = 0; i < 348; i++) {
+for (let i = 0; i < paresEsperados; i++) {
     const origen = contexto.redPuntoDeClave(nodos[i % 6]);
     const destino = contexto.redPuntoDeClave(nodos[(i * 7 + 6) % nodos.length]);
     paresReales.push({ id: 'P' + i + '→' + i, origen, destino });
@@ -194,11 +216,11 @@ for (let i = 0; i < 348; i++) {
 const inicio = Date.now();
 const completo = contexto.redAnalizarRed(red, { redVigente: red, pares: paresReales });
 const ms = Date.now() - inicio;
-comprobar('348 pares sin errores (la red actual conserva la alcanzabilidad)',
+comprobar(`${paresEsperados} pares sin errores (la red actual conserva la alcanzabilidad)`,
     completo.errores.length === 0, JSON.stringify(completo.errores));
 comprobar('el análisis completo tarda menos de 2 s', ms < 2000, ms + ' ms');
 comprobar('se informa la alcanzabilidad', completo.alcanzabilidad !== null
-    && completo.alcanzabilidad.alcanzables.length === 348,
+    && completo.alcanzabilidad.alcanzables.length === paresEsperados,
     JSON.stringify(completo.alcanzabilidad && completo.alcanzabilidad.alcanzables.length));
 console.log('       tiempo: ' + ms + ' ms');
 

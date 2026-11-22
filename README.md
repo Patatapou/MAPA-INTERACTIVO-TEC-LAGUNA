@@ -52,7 +52,7 @@ Sin `-t frontend`, `backend/` y `database/` quedarían expuestos en local. En pr
 ## Funcionalidad
 
 - **Mapa público**: huellas de edificios y accesos, buscador, selector de puertas, cálculo de ruta con Dijkstra sobre la red de caminos y simulación de ubicación por beacons (`USE_GPS_LOCATION = false` en `frontend/js/public/main.js`).
-- **Sugerencias**: botón ⚙️ del mapa. Sin sesión abre el formulario y envía a `index.php?p=send-suggestion`; con sesión de administrador abre el panel.
+- **Sugerencias**: botón «Sugerir cambios» del mapa. Abre un formulario externo (`SUGGESTION_FORM_URL` en `frontend/js/public/config.js`) en una pestaña nueva; si la URL está vacía, el botón se oculta. El sitio público no llama a PHP.
 - **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes) y administración de rutas del campus.
 - **Editores**: geometrías con Leaflet-Geoman y red de caminos con validación topológica en vivo (E01–E08 / W01–W06).
 
@@ -61,12 +61,12 @@ Sin `-t frontend`, `backend/` y `database/` quedarían expuestos en local. En pr
 Sin PHPUnit ni Composer:
 
 ```powershell
-php tests/rutas-repository.php
-php tests/rutas-service.php
-php tests/red/integridad-red.php
-php tests/red/validacion-red.php
-node tests/validar-cadenas.mjs --php
-node tests/red/paridad-grafo.mjs
+node scripts/verificar.mjs
+```
+
+Ese comando ejecuta `php -l`, la batería PHP, la batería Node y `tests/publicacion.mjs`. Las pruebas que necesitan servidor HTTP se lanzan aparte:
+
+```powershell
 powershell -File tests/regresion-general.ps1
 powershell -File tests/seguridad-rutas.ps1
 powershell -File tests/sesion-expirada.ps1

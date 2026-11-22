@@ -830,116 +830,24 @@ function destacarEdificio(edificioId) {
 }
 
 // ==========================================
-// ACCESO ADMINISTRATIVO / SUGERENCIAS
+// SUGERENCIAS (FORMULARIO EXTERNO)
 // ==========================================
 
-const adminBtn = document.getElementById('admin-access-btn');
-const modal = document.getElementById('suggestion-modal');
-const closeBtn = modal ? modal.querySelector('.close-btn') : null;
-const form = document.getElementById('suggestion-form');
-const formMessage = document.getElementById('form-message');
-const csrfInput = document.getElementById('csrf_token');
+// El enlace se define en `config.js`. Si la URL está vacía, el botón se
+// oculta: el sitio público no tiene formulario propio ni llama a PHP.
+function initSuggestionLink() {
+    const enlace = document.getElementById('admin-access-btn');
+    if (!enlace) return;
 
-let isAdmin = false;
+    const url = typeof SUGGESTION_FORM_URL === 'string' ? SUGGESTION_FORM_URL.trim() : '';
 
-async function checkAdminSession() {
-    try {
-        const res = await fetch('index.php?p=check-session', {
-            credentials: 'same-origin'
-        });
-        const data = await res.json();
-        isAdmin = data.isAdmin === true;
-        if (csrfInput && data.csrf_token) {
-            csrfInput.value = data.csrf_token;
-        }
-        return isAdmin;
-    } catch (e) {
-        isAdmin = false;
-        return false;
-    }
-}
-
-function openSuggestionModal() {
-    if (!modal) return;
-    formMessage.textContent = '';
-    formMessage.className = 'form-message';
-    if (form) form.reset();
-    modal.style.display = 'block';
-}
-
-function closeSuggestionModal() {
-    if (!modal) return;
-    modal.style.display = 'none';
-    formMessage.textContent = '';
-    formMessage.className = 'form-message';
-    if (form) form.reset();
-}
-
-async function initAdminButton() {
-    if (!adminBtn) return;
-
-    await checkAdminSession();
-
-    adminBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-
-        if (isAdmin) {
-            window.location.href = 'index.php?p=editar';
-            return;
-        }
-
-        // Sesión expirada o no admin: re-verificar y, si no es admin, abrir formulario
-        const adminNow = await checkAdminSession();
-        if (adminNow) {
-            window.location.href = 'index.php?p=editar';
-            return;
-        }
-
-        openSuggestionModal();
-    });
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeSuggestionModal);
+    if (url === '') {
+        enlace.hidden = true;
+        return;
     }
 
-    window.addEventListener('click', (e) => {
-        if (modal && e.target === modal) {
-            closeSuggestionModal();
-        }
-    });
-
-    if (form) {
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            formMessage.textContent = '';
-            formMessage.className = 'form-message';
-
-            const formData = new FormData(form);
-
-            try {
-                const res = await fetch('index.php?p=send-suggestion', {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'same-origin'
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    formMessage.textContent = data.message;
-                    formMessage.className = 'form-message success';
-                    form.reset();
-                    if (csrfInput) csrfInput.value = data.csrf_token || '';
-                    setTimeout(() => { closeSuggestionModal(); }, 1500);
-                } else {
-                    formMessage.textContent = data.message;
-                    formMessage.className = 'form-message error';
-                }
-            } catch (err) {
-                formMessage.textContent = 'Error al enviar la sugerencia. Intenta nuevamente.';
-                formMessage.className = 'form-message error';
-            }
-        });
-    }
+    enlace.href = url;
+    enlace.hidden = false;
 }
 
-initAdminButton();
+initSuggestionLink();

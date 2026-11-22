@@ -2,24 +2,21 @@
 // HUELLA DEL GRAFO DE CAMINOS
 // ==========================================
 // Script de solo lectura. Verifica que la red de caminos conserve las
-// métricas del grafo que usa Dijkstra. Sirve como prueba de regresión antes
-// y después de migrar `caminitos.geojson`.
+// invariantes del grafo que usa Dijkstra. Las cifras se calculan del propio
+// `caminitos.geojson`, así que no caducan cuando la red crece.
 //
 // Uso:
 //   node tests/grafo-huella.mjs
 //   node tests/grafo-huella.mjs --json
+//   node tests/grafo-huella.mjs --geometria
 //
-// Salida esperada (línea base del proyecto, red con revision=2):
-//   nodos=241
-//   aristas=312
-//   grado1=20
-//   componentes=1
-//   rutas=348/348
+// Comprueba:
+//   - el grafo es conexo (una sola componente);
+//   - las 6 puertas alcanzan todos los edificios (N/N);
+//   - nodos, aristas, features y vértices son coherentes entre sí;
+//   - con --geometria, cada segmento tiene >= 2 vértices y coordenadas finitas.
 //
-// La red es editable desde el panel: si un administrador cambia segmentos de
-// forma deliberada, actualiza esta línea base junto con el cambio.
-//
-// Código de salida: 0 si coincide con la línea base; 1 si difiere.
+// Código de salida: 0 si las invariantes se cumplen; 1 si alguna falla.
 
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -37,24 +34,6 @@ vm.runInThisContext(leer('frontend/data/GeoTec.js'));
 
 const caminitos = JSON.parse(leer('frontend/data/caminitos.geojson'));
 const datos = JSON.parse(leer('frontend/data/datos.json'));
-
-const LINEA_BASE = {
-    nodos: 241,
-    aristas: 312,
-    grado1: 20,
-    componentes: 1,
-    rutas: '348/348',
-};
-
-// Huella de la red ya normalizada (se comprueba solo con --geometria).
-// 314/646 → 313/644: se descarta el micro-tramo original de 0,107 m, que no
-// puede ser arista del grafo (sus dos extremos caen en el mismo nodo).
-// 313/644 → 312/644: edición del administrador con el editor de red
-// (revision=2), que quitó tres segmentos y añadió dos.
-const LINEA_BASE_GEOMETRIA = {
-    features: 312,
-    vertices: 644,
-};
 
 // ---------- Métricas del grafo ----------
 const graph = buildGraph(caminitos);
@@ -188,19 +167,60 @@ const resultado = {
     featuresGeoTec: features.length,
 };
 
-// ---------- Comparación con la línea base ----------
+// ---------- Invariantes (no dependen del tamaño de la red) ----------
 const errores = [];
-for (const clave of ['nodos', 'aristas', 'grado1', 'componentes', 'rutas']) {
-    if (resultado[clave] !== LINEA_BASE[clave]) {
-        errores.push(`${clave}: esperado ${LINEA_BASE[clave]}, obtenido ${resultado[clave]}`);
-    }
+
+if (resultado.features < 1) {
+    errores.push('la red no tiene segmentos');
+}
+if (resultado.vertices < resultado.features * 2) {
+    errores.push(`vértices insuficientes: ${resultado.vertices} para ${resultado.features} segmentos`);
+}
+if (resultado.nodos < 1) {
+    errores.push('el grafo no tiene nodos');
+}
+if (resultado.nodos > resultado.vertices) {
+    errores.push(`nodos (${resultado.nodos}) > vértices (${resultado.vertices})`);
+}
+if (resultado.aristas < resultado.nodos - 1) {
+    errores.push(`aristas insuficientes (${resultado.aristas}) para ${resultado.nodos} nodos`);
+}
+if (resultado.componentes !== 1) {
+    errores.push(`componentes: esperado 1, obtenido ${resultado.componentes}`);
+}
+if (alcanzables !== totalPares) {
+    errores.push(`rutas: esperado ${totalPares}/${totalPares}, obtenido ${alcanzables}/${totalPares}`);
 }
 
 const comprobarGeometria = process.argv.includes('--geometria');
 if (comprobarGeometria) {
-    for (const clave of ['features', 'vertices']) {
-        if (resultado[clave] !== LINEA_BASE_GEOMETRIA[clave]) {
-            errores.push(`${clave}: esperado ${LINEA_BASE_GEOMETRIA[clave]}, obtenido ${resultado[clave]}`);
+    for (const feature of caminitos.features || []) {
+        const id = (feature.properties && feature.properties.id) || '(sin id)';
+        const geom = feature.geometry;
+
+        if (!geom || (geom.type !== 'LineString' && geom.type !== 'MultiLineString')) {
+            errores.push(`${id}: geometría ausente o no lineal`);
+            continue;
+        }
+
+        const partes = geom.type === 'LineString' ? [geom.coordinates] : geom.coordinates;
+        if (!Array.isArray(partes) || partes.length === 0) {
+            errores.push(`${id}: sin coordenadas`);
+            continue;
+        }
+
+        for (const parte of partes) {
+            if (!Array.isArray(parte) || parte.length < 2) {
+                errores.push(`${id}: tramo con menos de 2 vértices`);
+                continue;
+            }
+            for (const punto of parte) {
+                if (!Array.isArray(punto) || punto.length < 2
+                    || !Number.isFinite(punto[0]) || !Number.isFinite(punto[1])) {
+                    errores.push(`${id}: coordenada inválida`);
+                    break;
+                }
+            }
         }
     }
 }
@@ -209,8 +229,6 @@ if (process.argv.includes('--json')) {
     console.log(JSON.stringify({
         ok: errores.length === 0,
         resultado,
-        esperado: LINEA_BASE,
-        esperadoGeometria: LINEA_BASE_GEOMETRIA,
         comprobarGeometria,
         errores,
     }, null, 2));
@@ -224,9 +242,9 @@ if (process.argv.includes('--json')) {
     console.log(`vertices=${resultado.vertices}`);
 
     if (errores.length === 0) {
-        console.log('\nOK: la huella del grafo coincide con la línea base.');
+        console.log('\nOK: la red cumple las invariantes del grafo (huella actual arriba).');
     } else {
-        console.error('\nFALLO: la huella del grafo cambió.');
+        console.error('\nFALLO: alguna invariante de la red no se cumple.');
         for (const error of errores) console.error(`- ${error}`);
     }
 }

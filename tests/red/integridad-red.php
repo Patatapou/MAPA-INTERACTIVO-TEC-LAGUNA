@@ -73,7 +73,7 @@ function repoNuevo(string $prefijo, ?array $contenido = null): array
     }
 
     return [
-        'repo' => new NetworkRepository($archivo, $respaldos),
+        'repo' => new NetworkRepository($archivo, $respaldos, $dir . '/locks'),
         'archivo' => $archivo,
         'respaldos' => $respaldos,
         'dir' => $dir,
@@ -157,7 +157,14 @@ try {
 
     $temporales = glob($ctx['archivo'] . '.tmp.*') ?: [];
     afirmarIgual('4. Guardado: sin archivos temporales huérfanos', 0, count($temporales));
-    afirmar('4. Guardado: archivo de bloqueo presente', file_exists($ctx['archivo'] . '.lock'));
+    afirmar(
+        '4. Guardado: el bloqueo vive en el directorio privado',
+        file_exists($ctx['dir'] . '/locks/caminitos.geojson.lock')
+    );
+    afirmar(
+        '4. Guardado: sin archivo de bloqueo junto a los datos',
+        !file_exists($ctx['archivo'] . '.lock')
+    );
 } finally {
     borrarDir($ctx['dir']);
 }

@@ -48,17 +48,43 @@ class NetworkRepository extends PathNetworkRepository
     public const MAX_RESPALDOS = 30;
 
     private string $dirRespaldos;
+    private string $dirBloqueos;
 
-    public function __construct(?string $rutaRed = null, ?string $dirRespaldos = null)
-    {
+    public function __construct(
+        ?string $rutaRed = null,
+        ?string $dirRespaldos = null,
+        ?string $dirBloqueos = null
+    ) {
         parent::__construct($rutaRed);
         $this->dirRespaldos = $dirRespaldos
             ?? BACKUPS_PATH . '/caminitos';
+        // Los bloqueos son estado privado: nunca dentro de `frontend/`.
+        $this->dirBloqueos = $dirBloqueos
+            ?? RUNTIME_PATH . '/locks';
     }
 
     public function dirRespaldos(): string
     {
         return $this->dirRespaldos;
+    }
+
+    public function dirBloqueos(): string
+    {
+        return $this->dirBloqueos;
+    }
+
+    /**
+     * Ruta del archivo de bloqueo, en un directorio privado.
+     */
+    private function rutaBloqueo(): string
+    {
+        if (!is_dir($this->dirBloqueos)
+            && !@mkdir($this->dirBloqueos, 0775, true)
+            && !is_dir($this->dirBloqueos)) {
+            throw new RuntimeException('No se pudo crear el directorio de bloqueos de la red.');
+        }
+
+        return $this->dirBloqueos . DIRECTORY_SEPARATOR . basename($this->rutaArchivo()) . '.lock';
     }
 
     /**
@@ -102,7 +128,7 @@ class NetworkRepository extends PathNetworkRepository
     public function guardarRevision(array $geojson, int $baseRevision): array
     {
         $ruta = $this->rutaArchivo();
-        $rutaBloqueo = $ruta . '.lock';
+        $rutaBloqueo = $this->rutaBloqueo();
 
         $bloqueo = @fopen($rutaBloqueo, 'c');
         if ($bloqueo === false) {

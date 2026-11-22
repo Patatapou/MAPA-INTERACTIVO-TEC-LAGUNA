@@ -221,7 +221,7 @@ $redInicial = redPropuesta($cadena, 1, 5);
 file_put_contents($archivo, json_encode($redInicial, JSON_PRETTY_PRINT));
 
 try {
-    $repo = new NetworkRepository($archivo, $dir . '/backups');
+    $repo = new NetworkRepository($archivo, $dir . '/backups', $dir . '/locks');
     $auditoria = new class ($dirAudit) extends AuditLogRepository {
         public function __construct(string $directorio)
         {

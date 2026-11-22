@@ -40,7 +40,8 @@
 
     <div class="location-controls">
         <button type="button" id="center-location-btn" class="location-button">Centrar</button>
-        <button type="button" id="admin-access-btn" class="location-button" title="Administrar / Sugerir cambios">Sugerir cambios⚙️</button>
+        <a id="admin-access-btn" class="location-button" href="#" target="_blank"
+            rel="noopener noreferrer" title="Sugerir cambios" hidden>Sugerir cambios⚙️</a>
     </div>
 
     <!-- Panel de Puertas de Acceso (Esquina inferior izquierda) -->
@@ -57,39 +58,11 @@
         </select>
     </div>
 
-<!-- Modal de sugerencias (usuario común) -->
-<div id="suggestion-modal" class="modal">
-    <div class="modal-content">
-        <button type="button" class="close-btn">&times;</button>
-        <h2>Sugerir cambios al mapa</h2>
-        <div class="form-container">
-            <form id="suggestion-form">
-                <input type="hidden" name="csrf_token" id="csrf_token" value="">
-                <label for="edificio">Edificio o elemento:</label>
-                <input type="text" id="edificio" name="edificio" placeholder="Ej: Edificio 5, Aula 5A, Cafetería...">
-
-                <label for="descripcion">Descripción de la sugerencia:</label>
-                <textarea id="descripcion" name="descripcion" rows="4" placeholder="¿Qué cambiaría o agregarías en el mapa?" required></textarea>
-
-                <label for="correo">Correo de contacto (opcional):</label>
-                <input type="email" id="correo" name="correo" placeholder="tu@correo.com">
-
-                <div id="form-message" class="form-message"></div>
-
-                <div class="form-actions">
-                    <button type="submit" class="submit-btn">Enviar sugerencia</button>
-                    <button type="button" class="cancel-btn">Cancelar</button>
-                    <button type="button" class="login-btn" onclick="window.location.href='index.php?p=login'">¿Eres admin?</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
     <!-- Scripts Modulares (orden: shared → public) -->
     <script src="js/shared/geo-utils.js"></script>
     <script src="js/public/beacons-simulation.js"></script>
     <script src="js/shared/pathfinding.js"></script>
+    <script src="js/public/config.js"></script>
     <script src="js/public/main.js"></script>
 </body>
 

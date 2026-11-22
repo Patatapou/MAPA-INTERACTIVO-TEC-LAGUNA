@@ -5,10 +5,13 @@
 // Único punto que decide qué archivo atiende cada petición.
 // El front controller (`index.php`) solo carga el bootstrap y este router.
 //
-// Rutas públicas: mapa, login, check-session y send-suggestion.
+// Rutas públicas: mapa y login.
 // Rutas protegidas: el resto; se valida la sesión ANTES de incluir el archivo.
 // Los endpoints vuelven a comprobar la sesión por sí mismos (defensa en
 // profundidad si se accediera al archivo directamente).
+//
+// `check-session` y `send-suggestion` ya no se enrutan: el mapa público es
+// estático y no usa PHP (los archivos se conservan sin uso, ver plan).
 //
 // `frontend/` es el document root: `index.html` (mapa) se sirve directamente.
 
@@ -34,8 +37,6 @@ $pagina = (string) $_GET['p'];
 $rutas = [
     // Públicas
     'login'           => ['archivo' => BACKEND_PATH . '/admin/login.php', 'auth' => false],
-    'check-session'   => ['archivo' => BACKEND_PATH . '/api/check-session.php', 'auth' => false],
-    'send-suggestion' => ['archivo' => BACKEND_PATH . '/api/send-suggestion.php', 'auth' => false],
 
     // Panel y vistas protegidas
     'editar'            => ['archivo' => BACKEND_PATH . '/admin/panel.php', 'auth' => true],
