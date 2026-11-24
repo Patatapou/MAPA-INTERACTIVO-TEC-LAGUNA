@@ -17,6 +17,7 @@ database/backups/
 # Logs
 *.log
 server.err
+server.out
 GeoTec.js.bak
 datos.json.bak
 caminitos.geojson.bak

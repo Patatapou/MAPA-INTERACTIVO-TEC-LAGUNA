@@ -66,6 +66,7 @@ $rutas = [
     'deleteUsuario'     => ['archivo' => BACKEND_PATH . '/api/delete-usuario.php', 'auth' => true],
 
     'get-location-mode' => ['archivo' => BACKEND_PATH . '/api/get-location-mode.php', 'auth' => true],
+    'publish-map'       => ['archivo' => BACKEND_PATH . '/api/publish-map.php', 'auth' => true],
 ];
 
 $ruta = $rutas[$pagina] ?? null;

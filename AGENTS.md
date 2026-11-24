@@ -36,6 +36,8 @@ tests/               pruebas sin dependencias
 DUMP/                legacy movido (PHP/public, procesar.php, mapa.php, respaldos). NO usar ni borrar
 router.php           router del servidor embebido (solo local)
 start-server.ps1     arranca el servidor local
+start-admin.ps1      inicia el servidor local y abre el login
+instalar-acceso-admin.ps1 crea el acceso directo del panel en el escritorio
 ```
 
 Reglas de oro:
@@ -59,6 +61,8 @@ URLs:
 - Panel: `http://127.0.0.1:8000/index.php?p=login`
 
 Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP (ver «Correo de sugerencias»).
+
+Para abrir el login directamente y crear un acceso directo en el escritorio: `.\start-admin.ps1` y `.\instalar-acceso-admin.ps1`. El segundo se ejecuta una vez por usuario de Windows.
 
 ## Rutas HTTP (`backend/router.php`)
 
@@ -84,6 +88,7 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 | `?p=getRed` | `backend/api/get-red.php` | sí |
 | `?p=save-red` | `backend/api/save-red.php` | sí + CSRF |
 | `?p=get-location-mode` | `backend/api/get-location-mode.php` | sí (GET); POST sí + CSRF |
+| `?p=publish-map` | `backend/api/publish-map.php` | sí + CSRF + solo localhost |
 
 `frontend/index.php` es el único PHP accesible desde el navegador (front controller delgado).
 
@@ -267,6 +272,7 @@ Editor gráfico de `frontend/data/caminitos.geojson`. No altera `dijkstra`, `bui
 - `backend/admin/editar-red.php` — vista + datos embebidos (`RED_INICIAL`, `RED_REVISION`, `RED_CSRF`, `RED_PAIRS`, `RED_METADATOS`).
 - `backend/api/get-red.php`, `backend/api/save-red.php` (400 E01–E05/E07/E08, 403, 405, 409, 500; cuerpo FormData o JSON; `base_revision` obligatorio; límite 2 MB).
 - `backend/services/NetworkService.php`, `backend/services/NetworkGraph.php`.
+- `backend/services/MapPublisher.php` publica el contenido estático de `frontend/` con previsualización, validación y confirmación; exige `main` sincronizada con `origin/main`.
 - `backend/repositories/NetworkRepository.php` (v2, 409, respaldos; extiende `PathNetworkRepository`; el editor nunca usa `PathNetworkRepository::guardar()`).
 - `scripts/migrar_red_v2.php`.
 - `frontend/js/admin/network-analysis.js`, `frontend/js/admin/network-editor.js`, `frontend/css/admin/red-editor.css`.
@@ -296,6 +302,7 @@ Comando único (multiplataforma): `node scripts/verificar.mjs`. Ejecuta `php -l`
 | `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella calculada del archivo, E01–E08, W01/W04/W05/W06, snapping y 6 × edificios pares |
 | `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
 | `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
+| `php tests/map-publisher.php` | Vista previa, allowlist, confirmación, validación y push a un remoto Git temporal |
 | `php tests/red/integridad-red.php` | Red ausente/corrupta/v1, respaldo, 409, IDs `tmp-`, retención de 30, bloqueo en directorio privado |
 | `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + IDs y auditoría |
 | `powershell -File tests/seguridad-rutas.ps1` | S-01…S-09 por HTTP (servidor propio en 8019) |

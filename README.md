@@ -24,7 +24,8 @@ Mapa enfocado en apoyar a estudiantes de nuevo ingreso y visitantes con la local
 
 - PHP 8.4 (CLI) — no hace falta Composer, `php.ini` ni extensión adicional.
 - Node.js (solo para las pruebas de la red de caminos).
-- Conexión a internet no necesaria: Leaflet 1.9.4 y Leaflet-Geoman están vendorizados y las teselas del campus son locales.
+- Git instalado y autenticado localmente para usar «Actualizar mapa» (conexión a internet necesaria para publicar).
+- Para ejecutar el mapa local no se necesita internet: Leaflet 1.9.4, Leaflet-Geoman y las teselas del campus están en el repositorio.
 
 ## Cómo ejecutarlo
 
@@ -40,6 +41,26 @@ Lanza `php -S 127.0.0.1:8000 -t frontend router.php` y escucha **solo** en local
 Las cuentas del panel se gestionan en `database/runtime/users.json`; este archivo es local y no se versiona.
 
 Detener el servidor: `Ctrl+C`.
+
+### Acceso directo al panel de administración
+
+Para iniciar el servidor local y abrir directamente el login:
+
+```powershell
+.\start-admin.ps1
+```
+
+Para crear el icono **Panel Admin ITL** en el escritorio del usuario actual, ejecuta una vez:
+
+```powershell
+.\instalar-acceso-admin.ps1
+```
+
+El icono inicia PHP solo en `127.0.0.1:8000`; deja abierta la ventana de PowerShell mientras uses el panel y presiona `Ctrl+C` para detener el servidor. Si faltan los datos privados iniciales, ejecuta `php scripts/instalar.php` una sola vez. La cuenta inicial es `admin` / `123456` y requiere cambiar la contraseña al entrar.
+
+### Actualizar el mapa publicado
+
+En el panel, **↑ Actualizar mapa** muestra los archivos estáticos que cambiarán y solicita confirmación. Solo publica desde `main` cuando está sincronizada con `origin/main`, no hay cambios ajenos al sitio público y `node tests/publicacion.mjs` pasa. El commit/push requiere que Git esté autenticado localmente y tenga configurado su autor; no se guarda ningún token en el proyecto. El push a `main` inicia el workflow de GitHub Pages. Si el push falla después de crear el commit, la interfaz muestra el error y aclara que el commit quedó local; no lo considera publicado y no sincroniza automáticamente.
 
 ### Sin el script
 

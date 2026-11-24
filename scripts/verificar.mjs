@@ -162,6 +162,10 @@ for (const prueba of pruebasNode) {
         process.execPath, [prueba.archivo, ...prueba.args]);
 }
 
+// Este caso levanta repositorios Git temporales y puede consumir CPU/disco.
+// Se ejecuta al final para no alterar el umbral temporal de los análisis de red.
+ejecutar('php tests/map-publisher.php', 'php', ['tests/map-publisher.php']);
+
 // ---------- Resumen ----------
 const fallos = resultados.filter((r) => !r.ok);
 const total = resultados.length;
