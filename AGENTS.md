@@ -263,8 +263,8 @@ Editor gráfico de `frontend/data/caminitos.geojson`. No altera `dijkstra`, `bui
 - Solo se abre desde el módulo de rutas con «🗺️ Red de caminos»; vuelve con «← Volver a rutas».
 - La barra lateral divide **Segmentos** y **Validación** al 50 % con divisor arrastrable (`#red-splitter`): ratón, táctil o `↑`/`↓`. El reparto se guarda en `estado.altoSegmentos`; por debajo de 861 px el divisor se oculta.
 - **Consultar**: clic para ver ID, estado, vértices y longitud.
-- **Dibujar**: polilínea con snapping propio a ≤8 m (preferencia de vértice si está a ≤1 m). Botón interruptor; se confirma con «✔️ Terminar dibujo», Enter o doble clic; Esc cancela.
-- **Editar**: Geoman gestiona los vértices del segmento seleccionado; la capa de referencia es de solo lectura.
+- **Dibujar**: polilínea con snapping propio a ≤4 m (preferencia de vértice si está a ≤0,5 m). Botón interruptor; se confirma con «✔️ Terminar dibujo», Enter o doble clic; Esc cancela.
+- **Editar**: Geoman gestiona los vértices del segmento seleccionado con snapping de 6 px; la capa de referencia es de solo lectura.
 - **Eliminar**: marca/desmarca segmentos; un `tmp-` se descarta directo.
 - Trazo visible de 6–7 px (9 px al seleccionar) más una polilínea transparente de 20 px (`red-golpe`) para acertar con el cursor.
 - Validación en vivo (`frontend/js/admin/network-analysis.js`) replica E01–E08/W01–W06 y bloquea el guardado si la propuesta deja sin ruta algún par puerta→edificio (E08); el servidor lo revalida con `NetworkService`/`NetworkGraph`.

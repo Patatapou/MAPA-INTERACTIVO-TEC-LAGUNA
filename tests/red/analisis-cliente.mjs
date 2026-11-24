@@ -194,12 +194,15 @@ comprobar('W05 detecta segmentos idénticos',
 
 // ---------- 6. Snapping ----------
 console.log('\n[6] Ajuste a la red');
-const cercaDeVertice = contexto.redAjustarPuntoARed(25.530001, -103.435999, vigente.features, 8);
+const cercaDeVertice = contexto.redAjustarPuntoARed(25.530001, -103.435999, vigente.features, 4);
 comprobar('el snapping devuelve un vértice existente',
     cercaDeVertice && cercaDeVertice.tipo === 'vertice', JSON.stringify(cercaDeVertice));
-const medio = contexto.redAjustarPuntoARed(25.53005, -103.43575, vigente.features, 8);
+const medio = contexto.redAjustarPuntoARed(25.53, -103.43575, vigente.features, 4);
 comprobar('el snapping devuelve un punto sobre el segmento',
     medio && medio.tipo === 'segmento', JSON.stringify(medio));
+const fueraDelRadio = contexto.redAjustarPuntoARed(25.53006, -103.4360, vigente.features);
+comprobar('el snapping predeterminado no alcanza puntos a más de 4 m',
+    fueraDelRadio === null, JSON.stringify(fueraDelRadio));
 
 // ---------- 7. Rendimiento con todos los pares puerta → edificio ----------
 console.log('\n[7] Análisis completo con pares');

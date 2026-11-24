@@ -402,7 +402,7 @@
      * @returns {{lat: number, lng: number, tipo: string, distancia: number, ids: string[]}|null}
      */
     function redAjustarPuntoARed(lat, lng, features, radioM, excluir) {
-        var radio = typeof radioM === 'number' ? radioM : 8.0;
+        var radio = typeof radioM === 'number' ? radioM : 4.0;
         var vetados = Object.create(null);
         (excluir || []).forEach(function (id) { vetados[String(id)] = true; });
 
@@ -454,9 +454,9 @@
 
         // Preferencia por el vértice: engancharse a un nodo es más estable que
         // a un punto medio (no depende de que la proyección caiga igual). Si
-        // el vértice está a menos de 1 m de la mejor arista, gana el vértice.
+        // el vértice está a menos de 0,5 m de la mejor arista, gana el vértice.
         if (mejorVertice && mejorArista) {
-            return mejorVertice.distancia <= mejorArista.distancia + 1.0
+            return mejorVertice.distancia <= mejorArista.distancia + 0.5
                 ? mejorVertice
                 : mejorArista;
         }

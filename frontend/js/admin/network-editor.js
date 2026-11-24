@@ -6,7 +6,7 @@
 //
 // Modos:
 //   consultar → seleccionar y ver detalle
-//   dibujar   → polilínea manual con snapping a la red (8 m)
+//   dibujar   → polilínea manual con snapping a la red (4 m)
 //   editar    → vértices del segmento seleccionado con Leaflet-Geoman
 //   eliminar  → marcar/desmarcar segmentos (borrado diferido al guardar)
 //
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (L.PM && typeof map.pm.setGlobalOptions === 'function') {
         map.pm.setGlobalOptions({
             snappable: true,
-            snapDistance: 12,
+            snapDistance: 6,
             snapSegment: true,
             allowSelfIntersection: true,
             preventMarkerRemoval: false
@@ -924,7 +924,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
         if (estado.modo === 'dibujar') {
-            actualizarEstado('Dibujar: clic para agregar vértices (se engancha a la red a ≤8 m). '
+            actualizarEstado('Dibujar: clic para agregar vértices (se engancha a la red a ≤4 m). '
                 + '«Terminar dibujo», doble clic o Enter para añadirlo; Esc o el botón Dibujar para salir sin guardar.');
             return;
         }
@@ -1039,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', function () {
             estado.geojson.features.filter(function (feature) {
                 return !estado.pendientesEliminar[idDe(feature)];
             }),
-            8
+            4
         );
         if (ajuste) {
             return { lat: ajuste.lat, lng: ajuste.lng, ajustado: true, tipo: ajuste.tipo };
