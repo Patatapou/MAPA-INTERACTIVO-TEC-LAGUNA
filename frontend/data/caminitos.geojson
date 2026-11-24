@@ -2820,14 +2820,14 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-24T22:51:09+00:00"
             },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -103.43601058359863,
-                        25.53282021061733
+                        -103.43598156629561,
+                        25.532816483476708
                     ],
                     [
                         -103.436012867899,
@@ -3162,7 +3162,7 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
@@ -3172,8 +3172,12 @@
                         25.534168715352614
                     ],
                     [
-                        -103.43561001857611,
-                        25.534182388663353
+                        -103.43576967422831,
+                        25.534162147997122
+                    ],
+                    [
+                        -103.43565435048718,
+                        25.534181499113995
                     ]
                 ]
             }
@@ -5084,18 +5088,18 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -103.43561342000434,
-                        25.534028929511962
+                        -103.43565971490521,
+                        25.5340290243335
                     ],
                     [
-                        -103.43560917953317,
-                        25.534181981491706
+                        -103.43565703318517,
+                        25.53417424378919
                     ]
                 ]
             }
@@ -5110,14 +5114,14 @@
                 "accesible": true,
                 "estado": "activa",
                 "creado_en": "2026-11-16T04:21:09+00:00",
-                "actualizado_en": "2026-11-16T04:21:09+00:00"
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
             },
             "geometry": {
                 "type": "LineString",
                 "coordinates": [
                     [
-                        -103.43560917953317,
-                        25.534181981491706
+                        -103.43565703318517,
+                        25.534176662230834
                     ],
                     [
                         -103.43560910923605,
@@ -8330,32 +8334,6 @@
         },
         {
             "type": "Feature",
-            "id": "seg-000320",
-            "properties": {
-                "id": "seg-000320",
-                "nombre": "Segmento 317",
-                "tipo": "peatonal",
-                "accesible": true,
-                "estado": "activa",
-                "creado_en": "2026-11-24T22:27:58+00:00",
-                "actualizado_en": "2026-11-24T22:27:58+00:00"
-            },
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        -103.43498890398223,
-                        25.533233627105197
-                    ],
-                    [
-                        -103.43498890398223,
-                        25.533139380982117
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
             "id": "seg-000322",
             "properties": {
                 "id": "seg-000322",
@@ -8379,9 +8357,373 @@
                     ]
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000323",
+            "properties": {
+                "id": "seg-000323",
+                "nombre": "Segmento 319",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:51:09+00:00",
+                "actualizado_en": "2026-11-24T22:51:09+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43598156629561,
+                        25.532816483476708
+                    ],
+                    [
+                        -103.43597869094037,
+                        25.532713290094097
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000324",
+            "properties": {
+                "id": "seg-000324",
+                "nombre": "Segmento 320",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:54:16+00:00",
+                "actualizado_en": "2026-11-24T22:54:16+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43565395326858,
+                        25.532717691990644
+                    ],
+                    [
+                        -103.43565406150131,
+                        25.53267700764696
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000325",
+            "properties": {
+                "id": "seg-000325",
+                "nombre": "Segmento 321",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:54:16+00:00",
+                "actualizado_en": "2026-11-24T22:54:16+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43613166717682,
+                        25.533695053850714
+                    ],
+                    [
+                        -103.43645345024865,
+                        25.53370010287607
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000326",
+            "properties": {
+                "id": "seg-000326",
+                "nombre": "Segmento 322",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:54:16+00:00",
+                "actualizado_en": "2026-11-24T22:54:16+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43613466261435,
+                        25.53375836044515
+                    ],
+                    [
+                        -103.43596419178448,
+                        25.53375841964828
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000328",
+            "properties": {
+                "id": "seg-000328",
+                "nombre": "Segmento 324",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:54:16+00:00",
+                "actualizado_en": "2026-11-24T22:54:16+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43488899887974,
+                        25.53373820216759
+                    ],
+                    [
+                        -103.43488423132969,
+                        25.533688225605896
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000329",
+            "properties": {
+                "id": "seg-000329",
+                "nombre": "Segmento 325",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:54:16+00:00",
+                "actualizado_en": "2026-11-24T22:54:16+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.4352248856874,
+                        25.533739717574033
+                    ],
+                    [
+                        -103.43522227376971,
+                        25.53363262449937
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000330",
+            "properties": {
+                "id": "seg-000330",
+                "nombre": "Segmento 324",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:55:53+00:00",
+                "actualizado_en": "2026-11-24T22:55:53+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43521680394531,
+                        25.533498557738636
+                    ],
+                    [
+                        -103.43522227376971,
+                        25.53363262449937
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000331",
+            "properties": {
+                "id": "seg-000331",
+                "nombre": "Segmento 325",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:55:53+00:00",
+                "actualizado_en": "2026-11-24T22:55:53+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43512567561595,
+                        25.533233627105194
+                    ],
+                    [
+                        -103.43512567561595,
+                        25.533143646398504
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000332",
+            "properties": {
+                "id": "seg-000332",
+                "nombre": "Segmento 326",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:55:53+00:00",
+                "actualizado_en": "2026-11-24T22:55:53+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43632752486387,
+                        25.53344688514806
+                    ],
+                    [
+                        -103.43633021728319,
+                        25.53338072356387
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000333",
+            "properties": {
+                "id": "seg-000333",
+                "nombre": "Segmento 327",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:59:12+00:00",
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43580446479612,
+                        25.53022964851406
+                    ],
+                    [
+                        -103.43580430481333,
+                        25.53012398774631
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000334",
+            "properties": {
+                "id": "seg-000334",
+                "nombre": "Segmento 328",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:59:12+00:00",
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.4355803445532,
+                        25.53081822333793
+                    ],
+                    [
+                        -103.43552260978865,
+                        25.53081337778702
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000335",
+            "properties": {
+                "id": "seg-000335",
+                "nombre": "Segmento 329",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:59:12+00:00",
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43571843077066,
+                        25.534027054354485
+                    ],
+                    [
+                        -103.43571581783166,
+                        25.533985216424046
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000336",
+            "properties": {
+                "id": "seg-000336",
+                "nombre": "Segmento 330",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:59:12+00:00",
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43586873216232,
+                        25.534165541343736
+                    ],
+                    [
+                        -103.43586869592188,
+                        25.53420509776468
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000337",
+            "properties": {
+                "id": "seg-000337",
+                "nombre": "Segmento 331",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:59:12+00:00",
+                "actualizado_en": "2026-11-24T22:59:12+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43604797464195,
+                        25.534165904806244
+                    ],
+                    [
+                        -103.43604570264674,
+                        25.53420763444782
+                    ]
+                ]
+            }
         }
     ],
     "schema_version": 2,
-    "revision": 8,
-    "next_seq": 323
+    "revision": 13,
+    "next_seq": 338
 }
