@@ -14,10 +14,10 @@ class AuthService
     private UserRepository $userRepo;
     private AuditLogRepository $auditRepo;
 
-    public function __construct()
+    public function __construct(?string $dataDir = null)
     {
-        $this->userRepo = new UserRepository();
-        $this->auditRepo = new AuditLogRepository();
+        $this->userRepo = new UserRepository($dataDir);
+        $this->auditRepo = new AuditLogRepository($dataDir);
     }
 
     /**
@@ -30,6 +30,9 @@ class AuthService
     public function autenticar(string $username, string $password): ?array
     {
         $usuario = $this->userRepo->buscarPorUsername($username);
+        $hashFicticio = '$2y$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+        $hashVigente = $usuario['password_hash'] ?? $hashFicticio;
+        $passwordValida = password_verify($password, $hashVigente);
 
         if ($usuario === null) {
             $this->auditRepo->registrar([
@@ -41,7 +44,7 @@ class AuthService
             return null;
         }
 
-        if (!password_verify($password, $usuario['password_hash'])) {
+        if (!$passwordValida) {
             $this->auditRepo->registrar([
                 'event' => 'login_failed',
                 'user_id' => $usuario['id'],
@@ -76,6 +79,8 @@ class AuthService
             'id' => $usuario['id'],
             'username' => $usuario['username'],
             'role' => $usuario['role'],
+            'must_change_password' => (bool) ($usuario['must_change_password'] ?? false),
+            'session_version' => (int) ($usuario['session_version'] ?? 1),
         ];
     }
 

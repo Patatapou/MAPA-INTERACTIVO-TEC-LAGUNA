@@ -138,6 +138,8 @@ const pruebasPhp = [
     'tests/rutas-service.php',
     'tests/red/integridad-red.php',
     'tests/red/validacion-red.php',
+    'tests/usuarios-repository.php',
+    'tests/usuarios-service.php',
 ];
 
 for (const prueba of pruebasPhp) {

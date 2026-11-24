@@ -12,9 +12,11 @@ abstract class BaseRepository
     protected string $dataDir;
     protected string $filename;
 
-    public function __construct()
+    public function __construct(?string $dataDir = null)
     {
-        $this->dataDir = RUNTIME_PATH;
+        $this->dataDir = $dataDir !== null && $dataDir !== ''
+            ? rtrim($dataDir, '/\\')
+            : RUNTIME_PATH;
     }
 
     /**

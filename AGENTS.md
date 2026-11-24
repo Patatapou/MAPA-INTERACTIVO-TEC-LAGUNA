@@ -139,7 +139,14 @@ PHP escribe estos tres archivos desde el panel; el navegador los lee. `img/<id>/
 
 ### Modelo de usuario (`users.json`)
 
-Campos: `id`, `username`, `email`, `password_hash`, `role`, `status`, `created_at`, `updated_at`, `last_login_at`, `schema_version`. Contraseñas con `password_hash()`/`password_verify()`. Usuario inicial: `admin` / `123456`.
+Esquema v2: `id`, `username`, `email`, `password_hash`, `role`, `status`, `must_change_password`, `password_changed_at`, `session_version`, `created_by`, `created_at`, `updated_at`, `last_login_at`, `schema_version`. Contraseñas con `password_hash()`/`password_verify()`. Usuario inicial: `admin` / `123456`, con cambio obligatorio tras instalar.
+
+### Gestor de usuarios
+
+- `?p=usuarios` ofrece listado, alta, edición de correo, activación/desactivación, restablecimiento y eliminación de cuentas inactivas.
+- `?p=cambiar-contrasena` permite cambiar la contraseña propia y es obligatorio en el primer acceso.
+- Los cambios incrementan `session_version` cuando cierran sesiones ajenas: desactivación, restablecimiento y cambio de contraseña.
+- Nunca queda sin administrador activo; no se permite desactivar ni eliminar la propia cuenta ni la última cuenta activa.
 
 ### Modelo edificio vs. acceso
 

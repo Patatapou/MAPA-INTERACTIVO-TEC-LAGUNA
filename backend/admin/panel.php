@@ -51,6 +51,7 @@ if (isset($_GET['editar']) && isset($datos[$_GET['editar']])) {
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">← Volver al mapa</button>
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=rutas'">🚶 Rutas</button>
+            <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=usuarios'">👥 Usuarios</button>
             <a href="index.php?p=editar-geometria&accion=nuevo" class="btn btn-primary">➕ Nuevo edificio</a>
             <form action="index.php?p=logout" method="post" style="display: inline; margin: 0;">
                 <button type="submit" class="btn btn-danger">Cerrar sesión</button>

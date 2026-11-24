@@ -44,6 +44,8 @@ $rutas = [
     'editar-geometria'  => ['archivo' => BACKEND_PATH . '/admin/editar-geometria.php', 'auth' => true],
     'rutas'             => ['archivo' => BACKEND_PATH . '/admin/rutas.php', 'auth' => true],
     'editar-red'        => ['archivo' => BACKEND_PATH . '/admin/editar-red.php', 'auth' => true],
+    'usuarios'          => ['archivo' => BACKEND_PATH . '/admin/usuarios.php', 'auth' => true],
+    'cambiar-contrasena'=> ['archivo' => BACKEND_PATH . '/admin/cambiar-contrasena.php', 'auth' => true],
 
     // Endpoints protegidos
     'getimages'         => ['archivo' => BACKEND_PATH . '/api/list-images.php', 'auth' => true],
@@ -56,6 +58,11 @@ $rutas = [
     'getRedCaminos'     => ['archivo' => BACKEND_PATH . '/api/get-red-caminos.php', 'auth' => true],
     'getRed'            => ['archivo' => BACKEND_PATH . '/api/get-red.php', 'auth' => true],
     'save-red'          => ['archivo' => BACKEND_PATH . '/api/save-red.php', 'auth' => true],
+    'getUsuarios'       => ['archivo' => BACKEND_PATH . '/api/get-usuarios.php', 'auth' => true],
+    'saveUsuario'       => ['archivo' => BACKEND_PATH . '/api/save-usuario.php', 'auth' => true],
+    'setEstadoUsuario'  => ['archivo' => BACKEND_PATH . '/api/set-estado-usuario.php', 'auth' => true],
+    'resetPasswordUsuario'=> ['archivo' => BACKEND_PATH . '/api/reset-password-usuario.php', 'auth' => true],
+    'deleteUsuario'     => ['archivo' => BACKEND_PATH . '/api/delete-usuario.php', 'auth' => true],
 ];
 
 $ruta = $rutas[$pagina] ?? null;

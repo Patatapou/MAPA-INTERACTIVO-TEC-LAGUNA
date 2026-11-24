@@ -53,7 +53,7 @@ Sin `-t frontend`, `backend/` y `database/` quedarían expuestos en local. En pr
 
 - **Mapa público**: huellas de edificios y accesos, buscador, selector de puertas, cálculo de ruta con Dijkstra sobre la red de caminos y simulación de ubicación por beacons (`USE_GPS_LOCATION = false` en `frontend/js/public/main.js`).
 - **Sugerencias**: botón «Sugerir cambios» del mapa. Abre un **Google Forms** (`SUGGESTION_FORM_URL` en `frontend/js/public/config.js`) en una pestaña nueva. Las respuestas las revisa el administrador del proyecto desde la cuenta propietaria del formulario; **no** se guardan en `database/runtime/suggestions.json` ni pasan por PHP. Si la URL está vacía, el botón se oculta.
-- **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes) y administración de rutas del campus.
+- **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes), administración de rutas del campus y gestión de usuarios administradores.
 - **Editores**: geometrías con Leaflet-Geoman y red de caminos con validación topológica en vivo (E01–E08 / W01–W06).
 
 ## Pruebas

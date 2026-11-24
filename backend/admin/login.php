@@ -47,7 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['auth_time'] = time();
                 $_SESSION['auth_ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
                 $_SESSION['admin_user'] = $usuario;
-                header('Location: index.php?p=editar');
+                if (!empty($usuario['must_change_password'])) {
+                    header('Location: index.php?p=cambiar-contrasena');
+                } else {
+                    header('Location: index.php?p=editar');
+                }
                 exit;
             } else {
                 $error = 'Credenciales incorrectas';
