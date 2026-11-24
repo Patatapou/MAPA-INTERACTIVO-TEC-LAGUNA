@@ -8327,9 +8327,35 @@
                     ]
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000320",
+            "properties": {
+                "id": "seg-000320",
+                "nombre": "Segmento 317",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:27:58+00:00",
+                "actualizado_en": "2026-11-24T22:27:58+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43498890398223,
+                        25.533233627105197
+                    ],
+                    [
+                        -103.43498890398223,
+                        25.533139380982117
+                    ]
+                ]
+            }
         }
     ],
     "schema_version": 2,
-    "revision": 4,
-    "next_seq": 320
+    "revision": 5,
+    "next_seq": 321
 }

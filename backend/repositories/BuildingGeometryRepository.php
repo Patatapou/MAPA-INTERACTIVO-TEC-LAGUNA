@@ -19,12 +19,14 @@ class BuildingGeometryRepository extends BaseRepository
 {
     protected string $filename = 'GeoTec.js';
     protected string $geoTecPath;
+    protected string $backupPath;
 
-    public function __construct()
+    public function __construct(?string $dataDir = null, ?string $backupDir = null)
     {
         // GeoTec.js es un dato público consumido por el mapa.
-        $this->dataDir = PUBLIC_DATA_PATH;
+        $this->dataDir = $dataDir ?? PUBLIC_DATA_PATH;
         $this->geoTecPath = $this->dataDir . DIRECTORY_SEPARATOR . $this->filename;
+        $this->backupPath = ($backupDir ?? BACKUPS_PATH) . DIRECTORY_SEPARATOR . 'GeoTec.js.bak';
     }
 
     /**
@@ -93,9 +95,16 @@ class BuildingGeometryRepository extends BaseRepository
             return false;
         }
 
-        // Respaldo del archivo anterior antes de sobrescribir
+        // Los respaldos se mantienen fuera del document root público.
         if (file_exists($this->geoTecPath)) {
-            @copy($this->geoTecPath, $this->geoTecPath . '.bak');
+            if (!is_dir(dirname($this->backupPath))) {
+                error_log('BuildingGeometryRepository: no existe el directorio privado de respaldos.');
+                return false;
+            }
+            if (!copy($this->geoTecPath, $this->backupPath)) {
+                error_log('BuildingGeometryRepository: no se pudo respaldar GeoTec.js antes de sobrescribirlo: ' . (error_get_last()['message'] ?? 'desconocido'));
+                return false;
+            }
         }
 
         $jsContenido = "var datosTec = " . $json . ";\n";

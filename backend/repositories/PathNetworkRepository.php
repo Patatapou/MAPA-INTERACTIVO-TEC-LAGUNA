@@ -8,8 +8,8 @@
 //  - La red vive en el directorio de datos públicos, no en `database/`.
 //  - La lectura es fail-closed: un archivo corrupto o inválido lanza
 //    excepción (nunca devuelve una red vacía que oculte el problema).
-//  - La escritura respalda la versión anterior en `.bak` y verifica el
-//    archivo antes de reemplazarlo.
+//  - La escritura respalda la versión anterior en el directorio privado de
+//    respaldos y verifica el archivo antes de reemplazarlo.
 //
 // En el MVP este repositorio se usa en modo lectura. La escritura queda
 // preparada para la fase 6 (edición de red).
@@ -19,6 +19,7 @@ require_once __DIR__ . '/../bootstrap.php';
 class PathNetworkRepository
 {
     private string $rutaRed;
+    private string $dirRespaldos;
 
     /**
      * Patrón de ID de segmento aprobado (D11).
@@ -30,9 +31,10 @@ class PathNetworkRepository
      */
     private const PATRON_ID = '/^seg-(?:[a-f0-9]{8}(?:-\d{2})?|\d{6})$/';
 
-    public function __construct(?string $rutaRed = null)
+    public function __construct(?string $rutaRed = null, ?string $dirRespaldos = null)
     {
         $this->rutaRed = $rutaRed ?? PUBLIC_DATA_PATH . '/caminitos.geojson';
+        $this->dirRespaldos = $dirRespaldos ?? BACKUPS_PATH;
     }
 
     public function rutaArchivo(): string
@@ -173,7 +175,10 @@ class PathNetworkRepository
 
         $respaldo = null;
         if ($this->existe()) {
-            $respaldo = $this->rutaRed . '.bak';
+            $respaldo = $this->dirRespaldos . DIRECTORY_SEPARATOR . 'caminitos.geojson.bak';
+            if (!is_dir($this->dirRespaldos)) {
+                throw new RuntimeException('No existe el directorio privado de respaldos de la red.');
+            }
             if (!copy($this->rutaRed, $respaldo)) {
                 throw new RuntimeException('No se pudo crear el respaldo de la red de caminos.');
             }

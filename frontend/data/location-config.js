@@ -1,1 +1,1 @@
-window.MODO_UBICACION = 'simulada';
+window.MODO_UBICACION = 'real';

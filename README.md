@@ -98,7 +98,7 @@ powershell -File tests/red/seguridad-red.ps1
 
 ## Datos
 
-- **Públicos** (`frontend/data/`): `datos.json` (metadatos), `GeoTec.js` (geometrías) y `caminitos.geojson` (red v2). Los escribe PHP y los lee el navegador.
+- **Públicos** (`frontend/data/`): `datos.json` (metadatos), `GeoTec.js` (geometrías) y `caminitos.geojson` (red v2). Los escribe PHP y los lee el navegador; sus respaldos quedan en `database/backups/`.
 - **Privados** (`database/runtime/`): usuarios, configuración, rutas, sugerencias del flujo PHP legado y auditoría. No están en Git.
 - Las imágenes de cada edificio viven en `frontend/img/<id>/`.
 

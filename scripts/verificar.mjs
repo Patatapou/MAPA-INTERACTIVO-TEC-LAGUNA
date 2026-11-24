@@ -140,6 +140,7 @@ const pruebasPhp = [
     'tests/red/validacion-red.php',
     'tests/usuarios-repository.php',
     'tests/usuarios-service.php',
+    'tests/backups-privados.php',
 ];
 
 for (const prueba of pruebasPhp) {

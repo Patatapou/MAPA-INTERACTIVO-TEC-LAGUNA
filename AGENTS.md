@@ -129,6 +129,7 @@ Para abrir el login directamente y crear un acceso directo en el escritorio: `.\
 - `location-config.js` — variable `window.MODO_UBICACION` (`simulada` o `real`), actualizada desde la parte superior de la sección de rutas del panel.
 
 PHP escribe estos archivos desde el panel; el navegador los lee. `location-config.js` solo contiene el modo público, sin secretos. `img/<id>/` contiene las imágenes de carrusel.
+Los respaldos de `GeoTec.js` y `caminitos.geojson` se escriben en `database/backups/`, nunca junto a los archivos servidos desde `frontend/`.
 
 ### Privados (`database/`)
 
@@ -140,6 +141,7 @@ PHP escribe estos archivos desde el panel; el navegador los lee. `location-confi
 | `runtime/suggestions.json` | sugerencias del flujo PHP legado (sin uso; las activas van a Google Forms) |
 | `runtime/audit-log.jsonl` | auditoría en JSONL |
 | `backups/caminitos/` | respaldos de la red (retención 30) |
+| `backups/GeoTec.js.bak` | última geometría de edificios antes de sobrescribirla |
 | `sources/*.geojson` | fuentes GIS originales |
 
 `database/runtime/` y `database/backups/` están en `.gitignore`. `bootstrap.php` falla con mensaje claro si falta `runtime/` (fail-visible), en lugar de crear un `users.json` vacío.
@@ -302,6 +304,7 @@ Comando único (multiplataforma): `node scripts/verificar.mjs`. Ejecuta `php -l`
 | `node tests/red/analisis-cliente.mjs` | Análisis cliente: huella calculada del archivo, E01–E08, W01/W04/W05/W06, snapping y 6 × edificios pares |
 | `php tests/rutas-repository.php` | Persistencia: archivo ausente/corrupto, `.bak`, conflicto, concurrencia, migración |
 | `php tests/rutas-service.php` | Reglas de negocio, hidratación y auditoría |
+| `php tests/backups-privados.php` | Respaldos de `GeoTec.js` y `caminitos.geojson` fuera de `frontend/` |
 | `php tests/map-publisher.php` | Vista previa, allowlist, confirmación, validación y push a un remoto Git temporal |
 | `php tests/red/integridad-red.php` | Red ausente/corrupta/v1, respaldo, 409, IDs `tmp-`, retención de 30, bloqueo en directorio privado |
 | `php tests/red/validacion-red.php` | Un caso por E01–E08 y W01–W06 + IDs y auditoría |
