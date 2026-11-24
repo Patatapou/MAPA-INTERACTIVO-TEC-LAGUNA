@@ -59,6 +59,9 @@
         ],
         "imagenes": [
             "img/5/2.jpg"
+        ],
+        "carpeta": [
+            "5"
         ]
     },
     "6": {
@@ -237,7 +240,6 @@
             "DEPARTAMENTO INGENIERIA EN SISTEMAS COMPUTACIONALES"
         ],
         "imagenes": [
-            "img/19/1.jpg",
             "img/19/2.jpg",
             "img/19/3.jpg",
             "img/19/4.jpg"
