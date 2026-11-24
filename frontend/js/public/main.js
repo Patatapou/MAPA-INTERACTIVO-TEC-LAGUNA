@@ -59,67 +59,143 @@ const beaconsData = [
 ];
 
 // ==========================================
+// UTILIDADES SEGURAS (delegadas en DomSeguro)
+// ==========================================
+// `js/shared/dom-seguro.js` se carga antes que este archivo. Los envoltorios
+// mantienen el mapa en marcha aunque el helper no estuviera disponible, pero
+// nunca insertan datos sin escapar.
+var Seguro = (typeof DomSeguro !== 'undefined') ? DomSeguro : null;
+
+function escaparHtml(valor) {
+    if (Seguro && typeof Seguro.escaparHtml === 'function') {
+        return Seguro.escaparHtml(valor);
+    }
+    return String(valor === null || valor === undefined ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escaparRegex(texto) {
+    if (Seguro && typeof Seguro.escaparRegex === 'function') {
+        return Seguro.escaparRegex(texto);
+    }
+    return String(texto === null || texto === undefined ? '' : texto)
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizarImagen(valor, idEsperado) {
+    if (Seguro && typeof Seguro.normalizarRutaImagen === 'function') {
+        return Seguro.normalizarRutaImagen(valor, idEsperado);
+    }
+    return null;
+}
+
+// Aviso no bloqueante para fallos de carga de datos.
+function mostrarAviso(mensaje) {
+    var aviso = document.getElementById('aviso-mapa');
+    if (!aviso) {
+        aviso = document.createElement('div');
+        aviso.id = 'aviso-mapa';
+        aviso.className = 'aviso-mapa';
+        aviso.setAttribute('role', 'status');
+        document.body.appendChild(aviso);
+    }
+    aviso.textContent = mensaje;
+}
+
+// ==========================================
 // CARGA DE DATOS & GEOMETRÍA
 // ==========================================
 
 // 1. Cargar metadatos de los edificios
 fetch('data/datos.json')
-    .then(response => response.json())
-    .then(data => {
+    .then(function (respuesta) {
+        if (!respuesta.ok) {
+            throw new Error('HTTP ' + respuesta.status);
+        }
+        return respuesta.json();
+    })
+    .then(function (data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            throw new Error('Formato inesperado en datos.json');
+        }
         infoEdificios = data;
         sincronizarNombresAccesos();
         console.log("Cargados metadatos de edificios con éxito.");
     })
-    .catch(error => console.error("Error cargando datos.json:", error));
+    .catch(function (error) {
+        console.error("Error cargando datos.json:", error);
+        mostrarAviso('No se pudieron cargar los datos de los edificios. El mapa sigue disponible.');
+    });
 
 // 2. Renderizar edificios desde datosTec (definido en GeoTec.js)
-L.geoJSON(datosTec, {
-    // Sin simplificación: Leaflet recorta vértices al dibujar (smoothFactor=1
-    // por defecto) y las huellas irregulares se veían como rectángulos.
-    smoothFactor: 0,
-    style: function (feature) {
-        return {
-            color: '#2F29D1',
-            weight: 0,
-            fillColor: '#3388FF',
-            fillOpacity: 0
-        };
-    },
-    onEachFeature: function (feature, layer) {
-        if (feature.properties.id) {
-            capasEdificios[feature.properties.id] = layer;
-        }
-
-        if (feature.properties.Nombre) {
-            layer.bindTooltip(feature.properties.Nombre, {
-                permanent: false,
-                direction: 'top',
-                className: 'mi-tooltip-estilo'
-            });
-        }
-
-        if (feature.properties.id) {
-            var centro = layer.getBounds().getCenter();
-            var iconoID = L.divIcon({
-                className: 'label-edificio',
-                html: feature.properties.id,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            });
-
-            L.marker(centro, { icon: iconoID, interactive: false }).addTo(map);
-        }
-
-        layer.on('click', function () {
-            mostrarPopupEdificio(feature.properties.id, layer);
-        });
+function renderizarEdificios() {
+    if (typeof datosTec === 'undefined' || !datosTec || !Array.isArray(datosTec.features)) {
+        console.error("GeoTec.js no definió datosTec; no se dibujan las huellas.");
+        mostrarAviso('No se pudieron cargar las geometrías de los edificios.');
+        return;
     }
-}).addTo(map);
+
+    L.geoJSON(datosTec, {
+        // Sin simplificación: Leaflet recorta vértices al dibujar (smoothFactor=1
+        // por defecto) y las huellas irregulares se veían como rectángulos.
+        smoothFactor: 0,
+        style: function (feature) {
+            return {
+                color: '#2F29D1',
+                weight: 0,
+                fillColor: '#3388FF',
+                fillOpacity: 0
+            };
+        },
+        onEachFeature: function (feature, layer) {
+            var propiedades = feature.properties || {};
+
+            if (propiedades.id) {
+                capasEdificios[propiedades.id] = layer;
+            }
+
+            if (propiedades.Nombre) {
+                layer.bindTooltip(escaparHtml(propiedades.Nombre), {
+                    permanent: false,
+                    direction: 'top',
+                    className: 'mi-tooltip-estilo'
+                });
+            }
+
+            if (propiedades.id) {
+                var centro = layer.getBounds().getCenter();
+                var iconoID = L.divIcon({
+                    className: 'label-edificio',
+                    html: escaparHtml(propiedades.id),
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                L.marker(centro, { icon: iconoID, interactive: false }).addTo(map);
+            }
+
+            layer.on('click', function () {
+                mostrarPopupEdificio(propiedades.id, layer);
+            });
+        }
+    }).addTo(map);
+}
+
+renderizarEdificios();
 
 // 3. Cargar caminos y construir el grafo para Dijkstra
 fetch('data/caminitos.geojson')
-    .then(resp => resp.json())
-    .then(data => {
+    .then(function (respuesta) {
+        if (!respuesta.ok) {
+            throw new Error('HTTP ' + respuesta.status);
+        }
+        return respuesta.json();
+    })
+    .then(function (data) {
         // Dibujar caminos sutiles en negro (transparente para no interferir con la visualización de edificios)
         L.geoJSON(data, {
             style: {
@@ -134,7 +210,10 @@ fetch('data/caminitos.geojson')
         pathGraph = buildGraph(data);
         console.log("Grafo para Dijkstra construido con éxito.");
     })
-    .catch(err => console.error("Error cargando caminitos.geojson:", err));
+    .catch(function (error) {
+        console.error("Error cargando caminitos.geojson:", error);
+        mostrarAviso('No se pudo cargar la red de caminos. El mapa sigue disponible.');
+    });
 
 // ==========================================
 // INICIALIZACIÓN DE LOCALIZACIÓN
@@ -146,14 +225,14 @@ if (USE_GPS_LOCATION) {
 } else {
     console.log("Iniciando en modo Simulación por Beacons");
     // Dibujar beacons en el mapa
-    beaconsData.forEach(b => b.agregarAlMapa(map));
+    beaconsData.forEach(function (b) { b.agregarAlMapa(map); });
 
     // Crear simulador y ubicación simulada arrastrable en el centro del campus
     simulador = new SimuladorBeacons(beaconsData);
     ubicacionSim = new UbicacionSimulada(map, 25.5324, -103.436);
 
     // Escuchar el movimiento del marcador simulado
-    ubicacionSim.onChange = (pos) => {
+    ubicacionSim.onChange = function (pos) {
         let posEstimada = simulador.trilaterar(pos);
         if (posEstimada) {
             if (window.estimacionMarker) {
@@ -304,74 +383,135 @@ function centerOnLocation() {
 // INTERFAZ POPUP DE DETALLE DE EDIFICIOS
 // ==========================================
 
+function crearBotonAccion(texto, accion, id) {
+    var boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'como-llegar-btn';
+    boton.textContent = texto;
+    boton.setAttribute('data-accion', accion);
+    if (id !== undefined && id !== null) {
+        boton.setAttribute('data-id', String(id));
+    }
+    return boton;
+}
+
+function crearPopupPuerta(id) {
+    var contenedor = document.createElement('div');
+    contenedor.className = 'popup-tec';
+
+    var titulo = document.createElement('h3');
+    titulo.textContent = obtenerNombrePuerta(id);
+    contenedor.appendChild(titulo);
+
+    var descripcion = document.createElement('p');
+    descripcion.textContent = 'Punto de acceso al campus.';
+    contenedor.appendChild(descripcion);
+
+    var acciones = document.createElement('div');
+    acciones.className = 'popup-actions popup-actions--columna';
+    acciones.appendChild(crearBotonAccion('Seleccionar punto de acceso', 'seleccionar-puerta', id));
+    acciones.appendChild(crearBotonAccion('Cómo llegar', 'iniciar-ruta', id));
+    contenedor.appendChild(acciones);
+
+    return contenedor;
+}
+
+function crearPopupEdificio(id, datos) {
+    var contenedor = document.createElement('div');
+    contenedor.className = 'popup-tec';
+
+    var nombre = (datos && typeof datos.nombre === 'string' && datos.nombre !== '')
+        ? datos.nombre
+        : ('Edificio ' + id);
+
+    var titulo = document.createElement('h3');
+    titulo.textContent = nombre;
+    contenedor.appendChild(titulo);
+
+    // Solo se renderizan imágenes que cumplan `img/<id>/<archivo>` y que
+    // pertenezcan al propio edificio. Cualquier otra ruta se descarta.
+    var imagenes = (datos && Array.isArray(datos.imagenes)) ? datos.imagenes : [];
+    var imagenesValidas = [];
+    imagenes.forEach(function (valor) {
+        var ruta = normalizarImagen(valor, id);
+        if (ruta) imagenesValidas.push(ruta);
+    });
+
+    if (imagenesValidas.length > 0) {
+        var carrusel = document.createElement('div');
+        carrusel.className = 'carousel-container';
+        imagenesValidas.forEach(function (ruta) {
+            var imagen = document.createElement('img');
+            imagen.src = ruta;
+            imagen.alt = nombre;
+            imagen.loading = 'lazy';
+            carrusel.appendChild(imagen);
+        });
+        contenedor.appendChild(carrusel);
+    }
+
+    if (datos && typeof datos.descripcion === 'string' && datos.descripcion !== '') {
+        var descripcion = document.createElement('p');
+        descripcion.textContent = datos.descripcion;
+        contenedor.appendChild(descripcion);
+    }
+
+    var etiquetaAulas = document.createElement('strong');
+    etiquetaAulas.textContent = 'Aulas u otros:';
+    contenedor.appendChild(etiquetaAulas);
+
+    var aulas = (datos && Array.isArray(datos.aulas)) ? datos.aulas : [];
+    if (aulas.length > 0) {
+        var contenedorAulas = document.createElement('div');
+        contenedorAulas.className = 'aulas-container';
+        aulas.forEach(function (aula) {
+            var insignia = document.createElement('span');
+            insignia.className = 'badge-aula';
+            insignia.textContent = String(aula);
+            contenedorAulas.appendChild(insignia);
+        });
+        contenedor.appendChild(contenedorAulas);
+    }
+
+    var acciones = document.createElement('div');
+    acciones.className = 'popup-actions';
+    acciones.appendChild(crearBotonAccion('Cómo llegar', 'iniciar-ruta', id));
+    contenedor.appendChild(acciones);
+
+    return contenedor;
+}
+
+function crearPopupSinDatos(id) {
+    var contenedor = document.createElement('div');
+    contenedor.className = 'popup-tec';
+
+    var titulo = document.createElement('h3');
+    titulo.textContent = 'Edificio ' + id;
+    contenedor.appendChild(titulo);
+
+    var descripcion = document.createElement('p');
+    descripcion.textContent = 'Información detallada no disponible.';
+    contenedor.appendChild(descripcion);
+
+    var acciones = document.createElement('div');
+    acciones.className = 'popup-actions';
+    acciones.appendChild(crearBotonAccion('Cómo llegar', 'iniciar-ruta', id));
+    contenedor.appendChild(acciones);
+
+    return contenedor;
+}
+
 function mostrarPopupEdificio(id, layer) {
     if (["P1", "P2", "P3", "P4", "P5", "P6"].includes(id)) {
-        let doorName = obtenerNombrePuerta(id);
-        layer.bindPopup(`
-            <div class="popup-tec">
-                <h3>${doorName}</h3>
-                <p>Punto de acceso al campus.</p>
-                <div class="popup-actions" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
-                    <button class="como-llegar-btn" onclick="seleccionarPuerta('${id}')">
-                        Seleccionar punto de acceso
-                    </button>
-                    <button class="como-llegar-btn" onclick="iniciarRuta('${id}')">
-                        Cómo llegar
-                    </button>
-                </div>
-            </div>
-        `).openPopup();
+        layer.bindPopup(crearPopupPuerta(id)).openPopup();
         return;
     }
 
     var datos = infoEdificios[id];
     if (datos) {
-        var imagenesHTML = '';
-        if (datos.imagenes && datos.imagenes.length > 0) {
-            imagenesHTML = '<div class="carousel-container">';
-            datos.imagenes.forEach(imgUrl => {
-                imagenesHTML += `<img src="${imgUrl}">`;
-            });
-            imagenesHTML += '</div>';
-        }
-
-        var aulasHTML = '';
-        if (datos.aulas && datos.aulas.length > 0) {
-            aulasHTML = '<div class="aulas-container">';
-            datos.aulas.forEach(aula => {
-                aulasHTML += `<span class="badge-aula">${aula}</span>`;
-            });
-            aulasHTML += '</div>';
-        }
-
-        var popupContent = `
-            <div class="popup-tec">
-                <h3>${datos.nombre}</h3>
-                ${imagenesHTML}
-                <p>${datos.descripcion}</p>
-                <strong>Aulas u otros:</strong>
-                ${aulasHTML}
-                <div class="popup-actions" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 10px;">
-                    <button class="como-llegar-btn" onclick="iniciarRuta('${id}')">
-                        Cómo llegar
-                    </button>
-                </div>
-            </div>
-        `;
-
-        layer.bindPopup(popupContent).openPopup();
+        layer.bindPopup(crearPopupEdificio(id, datos)).openPopup();
     } else {
-        layer.bindPopup(`
-            <div class="popup-tec">
-                <h3>Edificio ${id}</h3>
-                <p>Información detallada no disponible.</p>
-                <div class="popup-actions" style="margin-top: 12px; border-top: 1px solid #ddd; padding-top: 10px;">
-                    <button class="como-llegar-btn" onclick="iniciarRuta('${id}')">
-                        Cómo llegar
-                    </button>
-                </div>
-            </div>
-        `).openPopup();
+        layer.bindPopup(crearPopupSinDatos(id)).openPopup();
     }
 }
 
@@ -379,6 +519,27 @@ function mostrarPopupEdificio(id, layer) {
 function mostrarPopup(edificioId, layer) {
     mostrarPopupEdificio(edificioId, layer);
 }
+
+// Delegación de eventos: los popups y el panel se construyen con atributos
+// `data-accion`/`data-id` en lugar de manejadores `onclick` inline (CSP).
+document.addEventListener('click', function (evento) {
+    var objetivo = evento.target;
+    if (!objetivo || typeof objetivo.closest !== 'function') return;
+
+    var boton = objetivo.closest('[data-accion]');
+    if (!boton) return;
+
+    var accion = boton.getAttribute('data-accion');
+    var id = boton.getAttribute('data-id');
+
+    if (accion === 'seleccionar-puerta' && id) {
+        window.seleccionarPuerta(id);
+    } else if (accion === 'iniciar-ruta' && id) {
+        window.iniciarRuta(id);
+    } else if (accion === 'limpiar-ruta') {
+        window.limpiarRuta();
+    }
+});
 
 // ==========================================
 // SISTEMA DE NAVEGACIÓN DIJKSTRA
@@ -395,7 +556,11 @@ window.iniciarRuta = function (destId) {
     if (selectedDoorId) {
         origCoors = obtenerCentroPuerta(selectedDoorId);
         let selectEl = document.getElementById('doors-select');
-        origName = selectEl.options[selectEl.selectedIndex].text;
+        if (selectEl && selectEl.selectedIndex >= 0) {
+            origName = selectEl.options[selectEl.selectedIndex].text;
+        } else {
+            origName = obtenerNombrePuerta(selectedDoorId);
+        }
     } else {
         // 2. Si no hay puerta, usar la ubicación del usuario
         if (USE_GPS_LOCATION) {
@@ -492,14 +657,6 @@ function calcularRuta(origCoors, destId, origName) {
         endPointMarker = null;
     }
 
-    /*endPointMarker = L.marker([destCoors.lat, destCoors.lng], {
-        icon: L.divIcon({
-            className: 'route-point-end',
-            html: `<div style="background:#F44336; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.4);"></div>`,
-            iconSize: [16, 16]
-        })
-    }).addTo(map).bindTooltip(`Destino: ${destName}`);*/
-
     // Calcular distancia total de la ruta
     let distanciaTotal = Math.round(calcularDistanciaRuta(path));
 
@@ -508,6 +665,22 @@ function calcularRuta(origCoors, destId, origName) {
 
     // Cerrar cualquier popup abierto
     map.closePopup();
+}
+
+function crearFilaNavegacion(etiqueta, valor, claseValor) {
+    var fila = document.createElement('div');
+    fila.className = 'nav-info-item';
+
+    var titulo = document.createElement('strong');
+    titulo.textContent = etiqueta;
+
+    var detalle = document.createElement('span');
+    if (claseValor) detalle.className = claseValor;
+    detalle.textContent = valor;
+
+    fila.appendChild(titulo);
+    fila.appendChild(detalle);
+    return fila;
 }
 
 function mostrarPanelNavegacion(origen, destino, distancia) {
@@ -519,15 +692,29 @@ function mostrarPanelNavegacion(origen, destino, distancia) {
         document.body.appendChild(panel);
     }
 
-    panel.innerHTML = `
-        <div class="nav-info-header">Indicaciones de Ruta</div>
-        <div class="nav-info-details">
-            <div class="nav-info-item"><strong>Desde:</strong> <span>${origen}</span></div>
-            <div class="nav-info-item"><strong>Hasta:</strong> <span>${destino}</span></div>
-            <div class="nav-info-item"><strong>Distancia:</strong> <span class="nav-dist">${distancia} metros</span></div>
-        </div>
-        <button id="clear-route-btn" onclick="limpiarRuta()">Limpiar Recorrido</button>
-    `;
+    // Se construye con nodos de texto: los nombres vienen de los datos y no
+    // deben interpretarse como HTML.
+    panel.innerHTML = '';
+
+    var cabecera = document.createElement('div');
+    cabecera.className = 'nav-info-header';
+    cabecera.textContent = 'Indicaciones de Ruta';
+
+    var detalles = document.createElement('div');
+    detalles.className = 'nav-info-details';
+    detalles.appendChild(crearFilaNavegacion('Desde:', String(origen)));
+    detalles.appendChild(crearFilaNavegacion('Hasta:', String(destino)));
+    detalles.appendChild(crearFilaNavegacion('Distancia:', distancia + ' metros', 'nav-dist'));
+
+    var boton = document.createElement('button');
+    boton.type = 'button';
+    boton.id = 'clear-route-btn';
+    boton.setAttribute('data-accion', 'limpiar-ruta');
+    boton.textContent = 'Limpiar Recorrido';
+
+    panel.appendChild(cabecera);
+    panel.appendChild(detalles);
+    panel.appendChild(boton);
 
     // Añadir estilo activo
     setTimeout(() => {
@@ -550,7 +737,8 @@ window.limpiarRuta = function () {
     }
 
     // Limpiar selecciones de puertas
-    document.getElementById('doors-select').value = "";
+    var selectEl = document.getElementById('doors-select');
+    if (selectEl) selectEl.value = "";
     selectedDoorId = null;
     selectedDestinationId = null;
 
@@ -648,10 +836,10 @@ document.getElementById('doors-select').addEventListener('change', function (e) 
         startPointMarker = L.marker([centro.lat, centro.lng], {
             icon: L.divIcon({
                 className: 'route-point-start',
-                html: `<div style="background:#4CAF50; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.4);"></div>`,
+                html: '<div class="route-point-start-dot"></div>',
                 iconSize: [16, 16]
             })
-        }).addTo(map).bindTooltip(`Partida: ${doorName}`).openTooltip();
+        }).addTo(map).bindTooltip(escaparHtml('Partida: ' + doorName)).openTooltip();
 
         // Si hay un destino seleccionado actualmente, recalculamos la ruta desde la puerta elegida
         if (selectedDestinationId) {
@@ -705,34 +893,40 @@ centerBtn.addEventListener('click', function () {
 
 function buscarEdificiosYAulas(query) {
     var resultados = [];
+    var texto = String(query === null || query === undefined ? '' : query).toLowerCase();
 
-    for (var edificioId in infoEdificios) {
+    if (texto === '' || !infoEdificios || typeof infoEdificios !== 'object') {
+        return resultados;
+    }
+
+    Object.keys(infoEdificios).forEach(function (edificioId) {
         var edificio = infoEdificios[edificioId];
-        var nombreEdificio = edificio.nombre.toLowerCase();
-        var idMinusculas = edificioId.toLowerCase();
+        if (!edificio || typeof edificio !== 'object') return;
 
-        if (nombreEdificio.includes(query) || idMinusculas.includes(query)) {
+        var nombre = typeof edificio.nombre === 'string' ? edificio.nombre : '';
+        var nombreVisible = nombre !== '' ? nombre : ('Edificio ' + edificioId);
+        var aulas = Array.isArray(edificio.aulas) ? edificio.aulas : [];
+
+        if (nombre.toLowerCase().includes(texto) || edificioId.toLowerCase().includes(texto)) {
             resultados.push({
                 tipo: 'edificio',
                 edificioId: edificioId,
-                nombre: edificio.nombre,
+                nombre: nombreVisible,
                 aula: null
             });
         }
 
-        if (edificio.aulas) {
-            edificio.aulas.forEach(function (aula) {
-                if (aula.toLowerCase().includes(query)) {
-                    resultados.push({
-                        tipo: 'aula',
-                        edificioId: edificioId,
-                        nombre: edificio.nombre,
-                        aula: aula
-                    });
-                }
-            });
-        }
-    }
+        aulas.forEach(function (aula) {
+            if (typeof aula === 'string' && aula.toLowerCase().includes(texto)) {
+                resultados.push({
+                    tipo: 'aula',
+                    edificioId: edificioId,
+                    nombre: nombreVisible,
+                    aula: aula
+                });
+            }
+        });
+    });
 
     return resultados;
 }
@@ -752,13 +946,17 @@ function mostrarSugerencias(resultados, query) {
         var item = document.createElement('div');
         item.className = 'suggestion-item';
 
-        if (resultado.tipo === 'edificio') {
-            item.innerHTML = `<div class="suggestion-edificio">${resaltarTexto(resultado.nombre, query)}</div>`;
-        } else {
-            item.innerHTML = `
-                <div class="suggestion-edificio">${resultado.nombre}</div>
-                <div class="suggestion-aula">✒️ ${resaltarTexto(resultado.aula, query)}</div>
-            `;
+        var nombre = document.createElement('div');
+        nombre.className = 'suggestion-edificio';
+        nombre.appendChild(resaltarTexto(resultado.nombre, query));
+        item.appendChild(nombre);
+
+        if (resultado.tipo === 'aula') {
+            var aula = document.createElement('div');
+            aula.className = 'suggestion-aula';
+            aula.appendChild(document.createTextNode('✒️ '));
+            aula.appendChild(resaltarTexto(resultado.aula, query));
+            item.appendChild(aula);
         }
 
         item.addEventListener('click', function () {
@@ -771,14 +969,60 @@ function mostrarSugerencias(resultados, query) {
     suggestionsContainer.classList.add('active');
 }
 
+// Devuelve un fragmento con el texto resaltado. No construye HTML a partir de
+// los datos: los tramos son nodos de texto y el resaltado es un <span> creado
+// con `textContent`.
 function resaltarTexto(texto, query) {
-    var regex = new RegExp('(' + query + ')', 'gi');
-    return texto.replace(regex, '<span class="highlight">$1</span>');
+    var fragmento = document.createDocumentFragment();
+    var textoPlano = String(texto === null || texto === undefined ? '' : texto);
+    var patron = String(query === null || query === undefined ? '' : query);
+
+    if (patron === '') {
+        fragmento.appendChild(document.createTextNode(textoPlano));
+        return fragmento;
+    }
+
+    var regex;
+    try {
+        regex = new RegExp(escaparRegex(patron), 'gi');
+    } catch (error) {
+        fragmento.appendChild(document.createTextNode(textoPlano));
+        return fragmento;
+    }
+
+    var ultimo = 0;
+    var coincidencia;
+    while ((coincidencia = regex.exec(textoPlano)) !== null) {
+        if (coincidencia[0] === '') {
+            regex.lastIndex += 1;
+            continue;
+        }
+
+        if (coincidencia.index > ultimo) {
+            fragmento.appendChild(document.createTextNode(textoPlano.slice(ultimo, coincidencia.index)));
+        }
+
+        var resaltado = document.createElement('span');
+        resaltado.className = 'highlight';
+        resaltado.textContent = coincidencia[0];
+        fragmento.appendChild(resaltado);
+
+        ultimo = coincidencia.index + coincidencia[0].length;
+    }
+
+    if (ultimo < textoPlano.length) {
+        fragmento.appendChild(document.createTextNode(textoPlano.slice(ultimo)));
+    }
+
+    return fragmento;
 }
 
 function seleccionarSugerencia(edificioId, aula) {
     suggestionsContainer.classList.remove('active');
-    searchInput.value = aula || infoEdificios[edificioId].nombre;
+
+    var metadatos = infoEdificios ? infoEdificios[edificioId] : null;
+    var nombre = (metadatos && metadatos.nombre) ? metadatos.nombre : ('Edificio ' + edificioId);
+    searchInput.value = aula || nombre;
 
     destacarEdificio(edificioId);
 
@@ -833,15 +1077,16 @@ function destacarEdificio(edificioId) {
 // SUGERENCIAS (FORMULARIO EXTERNO)
 // ==========================================
 
-// El enlace se define en `config.js`. Si la URL está vacía, el botón se
-// oculta: el sitio público no tiene formulario propio ni llama a PHP.
+// El enlace se define en `config.js`. Si la URL está vacía (o no es https),
+// el botón se oculta: el sitio público no tiene formulario propio ni llama a
+// PHP. La URL de Google Forms se abre como navegación normal en otra pestaña.
 function initSuggestionLink() {
     const enlace = document.getElementById('admin-access-btn');
     if (!enlace) return;
 
     const url = typeof SUGGESTION_FORM_URL === 'string' ? SUGGESTION_FORM_URL.trim() : '';
 
-    if (url === '') {
+    if (url === '' || !/^https:\/\//i.test(url)) {
         enlace.hidden = true;
         return;
     }

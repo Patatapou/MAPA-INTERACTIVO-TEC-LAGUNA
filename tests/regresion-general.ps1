@@ -48,7 +48,7 @@ if (Test-Path $archivoRutas) {
 $anon = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 $r = Llamar 'GET' "$base/index.html" $anon
 Comprobar 'R-01 index.html responde 200' 200 $r.code ''
-Comprobar 'R-02 index.html carga Leaflet' $true ($r.body -match 'leaflet@1\.9\.4') ''
+Comprobar 'R-02 index.html carga Leaflet vendorizado' $true ($r.body -match 'js/vendor/leaflet/leaflet\.js') ''
 Comprobar 'R-03 index.html carga el router del mapa' $true ($r.body -match 'js/public/main\.js') ''
 Comprobar 'R-04 index.html conserva el botón de acceso admin' $true ($r.body -match 'btn-admin|admin') ''
 

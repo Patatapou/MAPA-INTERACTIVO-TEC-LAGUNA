@@ -196,24 +196,89 @@ if (datos && geotec && Array.isArray(geotec.features)) {
         `sin geometría: ${faltanEnGeotec.join(', ') || '—'}; sin metadatos: ${faltanEnDatos.join(', ') || '—'}`);
 }
 
-// ---------- 8. Imágenes existentes ----------
+// ---------- 8. Imágenes existentes y rutas relativas ----------
 if (datos) {
     const imagenesAusentes = [];
+    const imagenesInvalidas = [];
     let imagenes = 0;
 
     for (const [id, metadatos] of Object.entries(datos)) {
         const lista = metadatos && Array.isArray(metadatos.imagenes) ? metadatos.imagenes : [];
         for (const valor of lista) {
-            if (typeof valor !== 'string' || valor.trim() === '') continue;
+            if (typeof valor !== 'string' || valor.trim() === '') {
+                imagenesInvalidas.push(`${id}: valor vacío o no textual`);
+                continue;
+            }
+
             imagenes += 1;
-            const relativa = normalizar(valor.trim()).replace(/^\/+/, '');
-            if (!existeArchivo(relativa)) imagenesAusentes.push(`${id}: ${valor}`);
+            const ruta = valor.trim();
+
+            // El sitio puede publicarse en un subdirectorio de GitHub Pages:
+            // una barra inicial apuntaría a la raíz del dominio y rompería la
+            // imagen. Es un error, no algo que se tolere.
+            if (ruta.startsWith('/')) {
+                imagenesInvalidas.push(`${id}: ${valor} (empieza por /)`);
+                continue;
+            }
+
+            const idSeguro = id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const patron = new RegExp(`^img/${idSeguro}/[A-Za-z0-9][A-Za-z0-9._-]*$`);
+            if (!patron.test(ruta)) {
+                imagenesInvalidas.push(`${id}: ${valor} (no cumple img/<id>/<archivo>)`);
+                continue;
+            }
+
+            if (!existeArchivo(ruta)) imagenesAusentes.push(`${id}: ${valor}`);
         }
     }
 
     comprobar(`las ${imagenes} imágenes de datos.json existen`,
         imagenesAusentes.length === 0, imagenesAusentes.slice(0, 8).join(', '));
+    comprobar('las rutas de imágenes son relativas y válidas (img/<id>/<archivo>)',
+        imagenesInvalidas.length === 0, imagenesInvalidas.slice(0, 8).join(', '));
 }
+
+// ---------- 9. Enlace de sugerencias (Google Forms) ----------
+const configJs = leer('js/public/config.js');
+const coincidenciaUrl = /SUGGESTION_FORM_URL\s*=\s*'([^']*)'/.exec(configJs);
+const urlSugerencias = coincidenciaUrl ? coincidenciaUrl[1] : '';
+
+comprobar('SUGGESTION_FORM_URL apunta a un Google Forms público',
+    /^https:\/\/docs\.google\.com\/forms\//.test(urlSugerencias), urlSugerencias);
+
+comprobar('SUGGESTION_FORM_URL no incluye parámetros de edición ni secretos',
+    !/[?&](?:edit|edit2|token|key|apikey|api_key|secret|password|access_token)=/i.test(urlSugerencias)
+    && !/\/(?:edit|copy)(?:[?#]|$)/i.test(urlSugerencias), urlSugerencias);
+
+const etiquetaSugerencias = /<a\b[^>]*id="admin-access-btn"[^>]*>/i.exec(html);
+comprobar('el enlace de sugerencias abre en otra pestaña sin opener',
+    Boolean(etiquetaSugerencias)
+    && /target="_blank"/.test(etiquetaSugerencias[0])
+    && /rel="noopener noreferrer"/.test(etiquetaSugerencias[0]),
+    etiquetaSugerencias ? etiquetaSugerencias[0] : 'no encontrado');
+
+// ---------- 10. CSP, sin CDN y sin inline peligroso ----------
+const csp = /<meta[^>]+http-equiv="Content-Security-Policy"[^>]+content="([^"]+)"/i.exec(html);
+comprobar('index.html define una Content-Security-Policy', Boolean(csp));
+if (csp) {
+    comprobar("la CSP restringe scripts a 'self'", /script-src 'self'/.test(csp[1]), csp[1]);
+    comprobar("la CSP limita conexiones a 'self'", /connect-src 'self'/.test(csp[1]), csp[1]);
+    comprobar("la CSP bloquea formularios (form-action 'none')", /form-action 'none'/.test(csp[1]), csp[1]);
+}
+
+comprobar('Leaflet se sirve desde el repositorio, sin CDN',
+    !/(?:unpkg\.com|cdn\.jsdelivr|cdnjs\.cloudflare)/i.test(html));
+
+const inlinePeligroso = [];
+for (const coincidencia of html.matchAll(/<[^>]+\s(on[a-z]+|style)\s*=/gi)) {
+    inlinePeligroso.push(coincidencia[0].slice(0, 80));
+}
+comprobar('index.html no usa manejadores inline ni atributos style=',
+    inlinePeligroso.length === 0, inlinePeligroso.join(', '));
+
+const jsPublico = jsPublicos.map((archivo) => leer(archivo)).join('\n');
+comprobar('el JS público no usa onclick= ni style= en cadenas HTML',
+    !/\bonclick\s*=/.test(jsPublico) && !/\sstyle\s*=\s*["']/.test(jsPublico));
 
 console.log('\n' + (fallos === 0
     ? `OK: ${pruebas} comprobaciones correctas. El sitio es publicable.`

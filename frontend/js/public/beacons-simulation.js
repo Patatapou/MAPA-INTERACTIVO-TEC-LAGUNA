@@ -26,7 +26,7 @@ class Beacon {
         this.marcador = L.marker([this.lat, this.lng], {
             icon: L.divIcon({
                 className: 'beacon-marker',
-                html: `<div style="background:#00f; width:12px; height:12px; border-radius:50%; border:2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+                html: '<div class="beacon-marker-dot"></div>',
                 iconSize: [12, 12]
             }),
             title: this.nombre
@@ -51,7 +51,7 @@ class UbicacionSimulada {
             zIndexOffset: 1000,
             icon: L.divIcon({
                 className: 'simulated-marker',
-                html: `<div style="background:red; width:16px; height:16px; border-radius:50%; border:2px solid black; box-shadow: 0 0 6px rgba(0,0,0,0.6);"></div>`,
+                html: '<div class="simulated-marker-dot"></div>',
                 iconSize: [16, 16]
             })
         }).addTo(this.map)

@@ -151,6 +151,7 @@ const pruebasNode = [
     { archivo: 'tests/diagnostico-red.mjs', args: [] },
     { archivo: 'tests/red/paridad-grafo.mjs', args: rápido ? ['--rapido'] : [] },
     { archivo: 'tests/red/analisis-cliente.mjs', args: [] },
+    { archivo: 'tests/dom-seguro.mjs', args: [] },
     { archivo: 'tests/publicacion.mjs', args: [] },
 ];
 

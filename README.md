@@ -24,7 +24,7 @@ Mapa enfocado en apoyar a estudiantes de nuevo ingreso y visitantes con la local
 
 - PHP 8.4 (CLI) — no hace falta Composer, `php.ini` ni extensión adicional.
 - Node.js (solo para las pruebas de la red de caminos).
-- Conexión a internet para Leaflet 1.9.4 (unpkg CDN). Las teselas del campus son locales.
+- Conexión a internet no necesaria: Leaflet 1.9.4 y Leaflet-Geoman están vendorizados y las teselas del campus son locales.
 
 ## Cómo ejecutarlo
 
@@ -52,7 +52,7 @@ Sin `-t frontend`, `backend/` y `database/` quedarían expuestos en local. En pr
 ## Funcionalidad
 
 - **Mapa público**: huellas de edificios y accesos, buscador, selector de puertas, cálculo de ruta con Dijkstra sobre la red de caminos y simulación de ubicación por beacons (`USE_GPS_LOCATION = false` en `frontend/js/public/main.js`).
-- **Sugerencias**: botón «Sugerir cambios» del mapa. Abre un formulario externo (`SUGGESTION_FORM_URL` en `frontend/js/public/config.js`) en una pestaña nueva; si la URL está vacía, el botón se oculta. El sitio público no llama a PHP.
+- **Sugerencias**: botón «Sugerir cambios» del mapa. Abre un **Google Forms** (`SUGGESTION_FORM_URL` en `frontend/js/public/config.js`) en una pestaña nueva. Las respuestas las revisa el administrador del proyecto desde la cuenta propietaria del formulario; **no** se guardan en `database/runtime/suggestions.json` ni pasan por PHP. Si la URL está vacía, el botón se oculta.
 - **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes) y administración de rutas del campus.
 - **Editores**: geometrías con Leaflet-Geoman y red de caminos con validación topológica en vivo (E01–E08 / W01–W06).
 
@@ -64,7 +64,7 @@ Sin PHPUnit ni Composer:
 node scripts/verificar.mjs
 ```
 
-Ese comando ejecuta `php -l`, la batería PHP, la batería Node y `tests/publicacion.mjs`. Las pruebas que necesitan servidor HTTP se lanzan aparte:
+Ese comando ejecuta `php -l`, la batería PHP, la batería Node, `tests/dom-seguro.mjs` y `tests/publicacion.mjs`. Las pruebas que necesitan servidor HTTP se lanzan aparte:
 
 ```powershell
 powershell -File tests/regresion-general.ps1
@@ -78,7 +78,7 @@ powershell -File tests/red/seguridad-red.ps1
 ## Datos
 
 - **Públicos** (`frontend/data/`): `datos.json` (metadatos), `GeoTec.js` (geometrías) y `caminitos.geojson` (red v2). Los escribe PHP y los lee el navegador.
-- **Privados** (`database/runtime/`): usuarios, configuración, rutas, sugerencias y auditoría. No están en Git.
+- **Privados** (`database/runtime/`): usuarios, configuración, rutas, sugerencias del flujo PHP legado y auditoría. No están en Git.
 - Las imágenes de cada edificio viven en `frontend/img/<id>/`.
 
 ## Documentación

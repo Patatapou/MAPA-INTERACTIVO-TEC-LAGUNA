@@ -10,11 +10,11 @@ frontend/            document root: lo único que se sirve por HTTP
   index.php          front controller (carga ../backend/bootstrap.php y el router)
   css/public.css     estilos del mapa público
   css/admin/         panel, login, editor de geometrías, rutas y editor de red
-  css/vendor/        Leaflet-Geoman (vendorizado)
+  css/vendor/        Leaflet y Leaflet-Geoman (vendorizados)
   js/public/         main.js, config.js, beacons-simulation.js
-  js/shared/         geo-utils.js, pathfinding.js
+  js/shared/         dom-seguro.js, geo-utils.js, pathfinding.js
   js/admin/          editor, rutas-admin, ruta-editor, network-analysis, network-editor
-  js/vendor/         Leaflet-Geoman (vendorizado)
+  js/vendor/         Leaflet y Leaflet-Geoman (vendorizados)
   data/              datos públicos: datos.json, GeoTec.js, caminitos.geojson
   img/<id>/          imágenes de carrusel por edificio + logo
   tiles/satelital/   teselas locales {z}/{x}/{y}.jpg (zoom 15–19)
@@ -88,21 +88,26 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 
 ## Mapa público (`frontend/index.html`)
 
-- Leaflet 1.9.4 desde unpkg CDN — requiere internet. Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
+- Leaflet 1.9.4 vendorizado en `frontend/js/vendor/leaflet/` y `frontend/css/vendor/leaflet/` (sin CDN ni conexión). Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
 - Leaflet-Geoman vendorizado en `frontend/js/vendor/leaflet-geoman/` y `frontend/css/vendor/leaflet-geoman/` (sin CDN).
-- Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/config.js` → `js/public/main.js`.
+- Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/dom-seguro.js` → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/config.js` → `js/public/main.js`.
 - `js/public/main.js`: `USE_GPS_LOCATION = false` → simulación por beacons; `true` → GPS real (requiere HTTPS/localhost).
-- Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`.
+- Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`. Si falta `datosTec` o falla un `fetch`, el mapa sigue funcionando y muestra un aviso no bloqueante.
+- `js/shared/dom-seguro.js` expone `escaparHtml`, `escaparRegex` y `normalizarRutaImagen` (también como módulo CommonJS para las pruebas Node). Los popups, tooltips, panel de navegación y buscador construyen nodos de texto; no insertan datos del panel como HTML.
+- `index.html` declara una CSP por `<meta>` (`script-src 'self'`, `connect-src 'self'`, `form-action 'none'`, etc.) y no usa manejadores `on*` ni atributos `style=` inline.
 - Cada edificio muestra un círculo blanco con su ID y tooltip con el nombre. Las geometrías usan `smoothFactor: 0` (mapa, editor y capa de referencia); con el valor por defecto las huellas con muchos vértices se veían como cuadrados.
 
 ### Botón «Sugerir cambios»
 
-- Botón junto al control «Centrar» (arriba-derecha). Es un enlace externo: abre `SUGGESTION_FORM_URL` (`js/public/config.js`) en una pestaña nueva con `rel="noopener noreferrer"`.
-- Si `SUGGESTION_FORM_URL` está vacía, el botón se oculta. El mapa público **no** tiene formulario propio ni llama a PHP.
+- Botón junto al control «Centrar» (arriba-derecha). Es un enlace externo a un **Google Forms** configurado en `SUGGESTION_FORM_URL` (`js/public/config.js`); abre en una pestaña nueva con `target="_blank"` y `rel="noopener noreferrer"`.
+- Las respuestas quedan en el Google Forms y las revisa el administrador del proyecto desde la cuenta propietaria del formulario. **No** se guardan en `database/runtime/suggestions.json` ni pasan por PHP.
+- Si `SUGGESTION_FORM_URL` está vacía (o no es `https://`), el botón se oculta. El mapa público **no** tiene formulario propio ni llama a PHP.
+- La CSP no bloquea el enlace: es navegación de nivel superior con `target="_blank"`, no un `fetch`, un `form-action` ni un recurso embebido.
 - `backend/api/check-session.php` y `backend/api/send-suggestion.php` se conservan sin uso (decisión U-D5) y ya no están en `backend/router.php`.
 
 ### Correo de sugerencias (código conservado, sin ruta)
 
+- El flujo activo de sugerencias es Google Forms (ver arriba); este correo es legado y no se ejecuta.
 - `backend/api/send-suggestion.php` usa `mail()` con el resultado real (no simula éxito) y guarda en `database/runtime/suggestions.json`.
 - Destinatario fijo: `migel2013+mapa@outlook.com`.
 - SMTP por variables de entorno: `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM`. Sin SMTP, `mail()` falla y se reporta.
@@ -125,7 +130,7 @@ PHP escribe estos tres archivos desde el panel; el navegador los lee. `img/<id>/
 | `runtime/users.json` | cuentas de administrador |
 | `runtime/settings.json` | configuración general (sin secretos) |
 | `runtime/rutas.json` | rutas administrativas |
-| `runtime/suggestions.json` | sugerencias del mapa público |
+| `runtime/suggestions.json` | sugerencias del flujo PHP legado (sin uso; las activas van a Google Forms) |
 | `runtime/audit-log.jsonl` | auditoría en JSONL |
 | `backups/caminitos/` | respaldos de la red (retención 30) |
 | `sources/*.geojson` | fuentes GIS originales |
@@ -273,7 +278,8 @@ Comando único (multiplataforma): `node scripts/verificar.mjs`. Ejecuta `php -l`
 | Comando | Qué valida |
 |---|---|
 | `node scripts/verificar.mjs` | Comando único: sintaxis, batería PHP/Node y sitio publicable |
-| `node tests/publicacion.mjs` | Sitio publicable: sin PHP salvo `index.php`, sin privados, recursos relativos existentes, datos y IDs coherentes |
+| `node tests/publicacion.mjs` | Sitio publicable: sin PHP salvo `index.php`, sin privados, recursos relativos existentes, imágenes `img/<id>/<archivo>`, Google Forms, CSP y ausencia de inline |
+| `node tests/dom-seguro.mjs` | Helper de DOM seguro: escapado HTML, metacaracteres RegExp y validación de rutas de imagen |
 | `node tests/grafo-huella.mjs --geometria` | Invariantes del grafo calculadas del archivo (hoy `nodos=242 aristas=314 grado1=20 componentes=1 rutas=348/348`, geometría `313/646`); con `--geometria`, valida cada segmento |
 | `node tests/validar-cadenas.mjs --php` | 9 casos de cadenas + paridad JS/PHP con `PathNetworkService` |
 | `node tests/diagnostico-red.mjs` | Diagnóstico de la red (informe, sin umbral) |

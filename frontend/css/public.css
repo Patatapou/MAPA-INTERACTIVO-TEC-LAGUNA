@@ -331,6 +331,19 @@ html, body, #map {
     transform: translateY(0);
 }
 
+/* Acciones dentro de los popups (sin estilos inline) */
+.popup-actions {
+    margin-top: 12px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+.popup-actions--columna {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 /* PANEL FLOTANTE DE INFORMACIÓN DE NAVEGACIÓN ACTIVA */
 .navigation-info-panel {
     position: fixed;
@@ -462,6 +475,52 @@ html, body, #map {
     animation: pulseStart 2.5s infinite;
 }
 
+/* Puntos de los marcadores (antes con style= inline) */
+.beacon-marker-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #00f;
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+
+.simulated-marker-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: red;
+    border: 2px solid black;
+    box-shadow: 0 0 6px rgba(0,0,0,0.6);
+}
+
+.route-point-start-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #4CAF50;
+    border: 2px solid white;
+    box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+
+/* Aviso no bloqueante de carga de datos */
+.aviso-mapa {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500;
+    max-width: 90%;
+    background: #fff3cd;
+    color: #664d03;
+    border: 1px solid #ffecb5;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 @keyframes pulseStart {
     0% {
         box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
@@ -496,202 +555,4 @@ html, body, #map {
 
 #admin-access-btn:active {
     transform: translateY(1px);
-}
-
-/* ==========================================
-   MODAL DE SUGERENCIAS
-   ========================================== */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 2000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background-color: white;
-    margin: auto;
-    padding: 24px;
-    border-radius: 10px;
-    width: 90%;
-    max-width: 520px;
-    max-height: 85vh;
-    overflow-y: auto;
-    position: relative;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-    animation: modalFade 0.3s ease;
-}
-
-@keyframes modalFade {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.close-btn {
-    position: absolute;
-    right: 14px;
-    top: 10px;
-    font-size: 28px;
-    font-weight: bold;
-    color: #666;
-    cursor: pointer;
-    border: none;
-    background: none;
-    line-height: 1;
-}
-
-.close-btn:hover {
-    color: #1b3a57;
-}
-
-.modal-content h2 {
-    color: #1b3a57;
-    margin: 0 0 16px 0;
-    font-size: 20px;
-}
-
-.modal-content label {
-    display: block;
-    margin: 14px 0 6px;
-    font-weight: bold;
-    color: #333;
-    font-size: 14px;
-}
-
-.modal-content input,
-.modal-content textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #d1d1d1;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 14px;
-}
-
-.modal-content input:focus,
-.modal-content textarea:focus {
-    outline: none;
-    border-color: #1b3a57;
-}
-
-.modal-content textarea {
-    height: 110px;
-    resize: vertical;
-}
-
-.form-message {
-    margin: 12px 0;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 14px;
-    display: none;
-}
-
-.form-message.show {
-    display: block;
-}
-
-.form-message.success {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #c8e6c9;
-}
-
-.form-message.error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ffcdd2;
-}
-
-.form-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-}
-
-.submit-btn,
-.cancel-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.submit-btn {
-    background-color: #1b3a57;
-    color: white;
-}
-
-.submit-btn:hover {
-    background-color: #2d5a7f;
-}
-
-.cancel-btn {
-    background-color: #f0f0f0;
-    color: #333;
-}
-
-.cancel-btn:hover {
-    background-color: #e0e0e0;
-}
-
-.form-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: flex-start;
-    justify-content: space-between;
-}
-
-.form-container form {
-    flex: 1;
-    min-width: 280px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.form-container form label {
-    margin-bottom: 4px;
-}
-
-.form-container form input,
-.form-container form textarea {
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.login-btn {
-    background-color: transparent;
-    color: #1b3a57;
-    border: 2px solid #1b3a57;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-.login-btn:hover {
-    background-color: #1b3a57;
-    color: white;
-}
-
-@media (max-width: 768px) {
-    .modal-content {
-        width: 94%;
-        margin: 40px auto;
-        padding: 18px;
-    }
 }
