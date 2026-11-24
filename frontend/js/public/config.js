@@ -8,4 +8,4 @@
 // queda vacío, el botón se oculta y no se muestra ninguna alternativa.
 // Las respuestas llegan a la cuenta propietaria del formulario, no a
 // `database/runtime/suggestions.json`.
-const SUGGESTION_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeZqG8--PFhC3UKmJngQISqMZUQe6RmlXU0R4ewHxEorph7IQ/viewform?usp=sharing&ouid=106927005741006935261';
+const SUGGESTION_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeZqG8--PFhC3UKmJngQISqMZUQe6RmlXU0R4ewHxEorph7IQ/viewform';
