@@ -8353,9 +8353,35 @@
                     ]
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000321",
+            "properties": {
+                "id": "seg-000321",
+                "nombre": "Segmento 318",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-24T22:40:00+00:00",
+                "actualizado_en": "2026-11-24T22:40:00+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.4360298698608,
+                        25.534713202662036
+                    ],
+                    [
+                        -103.43602967540464,
+                        25.5347941497445
+                    ]
+                ]
+            }
         }
     ],
     "schema_version": 2,
-    "revision": 5,
-    "next_seq": 321
+    "revision": 6,
+    "next_seq": 322
 }
