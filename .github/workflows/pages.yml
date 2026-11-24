@@ -1,0 +1,61 @@
+name: Publicar sitio estatico
+
+# Publica la carpeta frontend/ en GitHub Pages SIN ningun archivo PHP.
+# Se ejecuta en cada push a main que toque frontend/ y tambien a mano
+# (pestana Actions -> "Publicar sitio estatico" -> Run workflow).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+
+      - name: Verificar que el sitio es publicable
+        run: node tests/publicacion.mjs
+
+      - name: Construir el artefacto sin PHP ni archivos privados
+        run: |
+          mkdir _site
+          cp -R frontend/. _site/
+          find _site -name '*.php' -delete
+          if find _site \( -name '*.bak' -o -name '*.lock' -o -name '*.tmp*' -o -name '*.log' -o -name 'users.json' \) | grep -q .; then
+            echo "Hay archivos privados en el artefacto"
+            exit 1
+          fi
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
