@@ -112,7 +112,10 @@
         modalPregunta: document.getElementById('modal-eliminar-pregunta'),
         modalError: document.getElementById('modal-eliminar-error'),
         modalCancelar: document.getElementById('modal-cancelar'),
-        modalConfirmar: document.getElementById('modal-confirmar')
+        modalConfirmar: document.getElementById('modal-confirmar'),
+        modoUbicacion: document.getElementById('modo-ubicacion'),
+        guardarModoUbicacion: document.getElementById('guardar-modo-ubicacion'),
+        estadoModoUbicacion: document.getElementById('modo-ubicacion-estado')
     };
 
     // ---------- Mapa ----------
@@ -181,6 +184,56 @@
                 }
                 return datosRespuesta;
             });
+        });
+    }
+
+    function guardarModoUbicacion() {
+        var modo = dom.modoUbicacion.value;
+        if (modo !== 'real' && modo !== 'simulada') {
+            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado error';
+            dom.estadoModoUbicacion.textContent = 'Selecciona un modo de ubicación válido.';
+            return;
+        }
+
+        dom.guardarModoUbicacion.disabled = true;
+        dom.estadoModoUbicacion.className = 'modo-ubicacion-estado';
+        dom.estadoModoUbicacion.textContent = 'Guardando…';
+
+        var cuerpo = new FormData();
+        cuerpo.append('csrf_token', cfg.csrfToken || '');
+        cuerpo.append('modo', modo);
+
+        fetch(urls.locationMode, {
+            method: 'POST',
+            body: cuerpo,
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        }).then(function (respuesta) {
+            if (respuesta.status === 403) {
+                window.location.href = 'index.php?p=login';
+                throw new Error('Sesión expirada o token CSRF inválido.');
+            }
+            return respuesta.text().then(function (texto) {
+                var resultado;
+                try {
+                    resultado = JSON.parse(texto);
+                } catch (error) {
+                    throw new Error('Respuesta inesperada del servidor (HTTP ' + respuesta.status + ').');
+                }
+                if (!respuesta.ok || resultado.success !== true) {
+                    throw new Error(resultado.message || ('Error HTTP ' + respuesta.status));
+                }
+                return resultado;
+            });
+        }).then(function (resultado) {
+            cfg.locationMode = resultado.modo;
+            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado success';
+            dom.estadoModoUbicacion.textContent = 'Guardado.';
+        }).catch(function (error) {
+            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado error';
+            dom.estadoModoUbicacion.textContent = 'No se pudo guardar: ' + error.message;
+        }).then(function () {
+            dom.guardarModoUbicacion.disabled = false;
         });
     }
 
@@ -634,6 +687,7 @@
 
     dom.modalCancelar.addEventListener('click', cerrarModalEliminar);
     dom.modalConfirmar.addEventListener('click', confirmarEliminar);
+    dom.guardarModoUbicacion.addEventListener('click', guardarModoUbicacion);
 
     dom.modal.addEventListener('click', function (evento) {
         if (evento.target === dom.modal) { cerrarModalEliminar(); }

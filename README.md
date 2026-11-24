@@ -51,9 +51,9 @@ Sin `-t frontend`, `backend/` y `database/` quedarían expuestos en local. En pr
 
 ## Funcionalidad
 
-- **Mapa público**: huellas de edificios y accesos, buscador, selector de puertas, cálculo de ruta con Dijkstra sobre la red de caminos y simulación de ubicación por beacons (`USE_GPS_LOCATION = false` en `frontend/js/public/main.js`).
+- **Mapa público**: huellas de edificios y accesos, buscador, selector de puertas, cálculo de ruta con Dijkstra sobre la red de caminos y modo de ubicación configurable (beacons o GPS) desde la sección de rutas del panel. Al quedar a 10 m o menos del centro geométrico del destino, la ruta se retira y la tarjeta muestra «¡Llegaste a tu destino!» junto con el botón para cerrar.
 - **Sugerencias**: botón «Sugerir cambios» del mapa. Abre un **Google Forms** (`SUGGESTION_FORM_URL` en `frontend/js/public/config.js`) en una pestaña nueva. Las respuestas las revisa el administrador del proyecto desde la cuenta propietaria del formulario; **no** se guardan en `database/runtime/suggestions.json` ni pasan por PHP. Si la URL está vacía, el botón se oculta.
-- **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes), administración de rutas del campus y gestión de usuarios administradores.
+- **Panel**: alta/edición/borrado de edificios (metadatos, geometría e imágenes), administración de rutas del campus y gestión de usuarios administradores. En la sección de rutas se configura si el mapa público usa ubicación simulada por beacons o GPS real; el modo seleccionado se aplica al recargar el mapa.
 - **Editores**: geometrías con Leaflet-Geoman y red de caminos con validación topológica en vivo (E01–E08 / W01–W06).
 
 ## Pruebas

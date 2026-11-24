@@ -157,6 +157,18 @@ let caminitos = null;
 let geotec = null;
 
 try {
+    const contexto = { window: {} };
+    vm.runInNewContext(leer('data/location-config.js'), contexto, {
+        filename: 'location-config.js',
+        timeout: 1000,
+    });
+    comprobar('location-config.js define un modo válido',
+        contexto.window.MODO_UBICACION === 'real' || contexto.window.MODO_UBICACION === 'simulada');
+} catch (error) {
+    comprobar('location-config.js define un modo válido', false, error.message);
+}
+
+try {
     datos = JSON.parse(leer('data/datos.json'));
     comprobar('datos.json es JSON válido', typeof datos === 'object' && datos !== null);
 } catch (error) {

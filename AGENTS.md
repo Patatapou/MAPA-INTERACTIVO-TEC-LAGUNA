@@ -83,6 +83,7 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 | `?p=getRedCaminos` | `backend/api/get-red-caminos.php` | sí |
 | `?p=getRed` | `backend/api/get-red.php` | sí |
 | `?p=save-red` | `backend/api/save-red.php` | sí + CSRF |
+| `?p=get-location-mode` | `backend/api/get-location-mode.php` | sí (GET); POST sí + CSRF |
 
 `frontend/index.php` es el único PHP accesible desde el navegador (front controller delgado).
 
@@ -91,7 +92,7 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 - Leaflet 1.9.4 vendorizado en `frontend/js/vendor/leaflet/` y `frontend/css/vendor/leaflet/` (sin CDN ni conexión). Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
 - Leaflet-Geoman vendorizado en `frontend/js/vendor/leaflet-geoman/` y `frontend/css/vendor/leaflet-geoman/` (sin CDN).
 - Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/dom-seguro.js` → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/config.js` → `js/public/main.js`.
-- `js/public/main.js`: `USE_GPS_LOCATION = false` → simulación por beacons; `true` → GPS real (requiere HTTPS/localhost).
+- `js/public/main.js` carga `data/location-config.js`: el administrador configura el modo en la parte superior de `?p=rutas`. `simulada` activa beacons; `real` usa GPS del navegador (requiere HTTPS/localhost). El cambio se aplica al recargar el mapa público.
 - Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`. Si falta `datosTec` o falla un `fetch`, el mapa sigue funcionando y muestra un aviso no bloqueante.
 - `js/shared/dom-seguro.js` expone `escaparHtml`, `escaparRegex` y `normalizarRutaImagen` (también como módulo CommonJS para las pruebas Node). Los popups, tooltips, panel de navegación y buscador construyen nodos de texto; no insertan datos del panel como HTML.
 - `index.html` declara una CSP por `<meta>` (`script-src 'self'`, `connect-src 'self'`, `form-action 'none'`, etc.) y no usa manejadores `on*` ni atributos `style=` inline.
@@ -120,8 +121,9 @@ Detener: `Ctrl+C`. PHP 8.4.7 CLI, sin `php.ini` cargado. `mail()` requiere SMTP 
 - `datos.json` — metadatos: `nombre`, `descripcion`, `aulas`, `carpeta`, `tipo`, `imagenes`. Clave = ID del edificio. `tipo` es `edificio` (por defecto) o `acceso`.
 - `GeoTec.js` — geometrías: variable global `datosTec` (FeatureCollection); `properties.id` coincide con la clave de `datos.json`.
 - `caminitos.geojson` — red de caminos (formato v2, ver «Editor de la red»).
+- `location-config.js` — variable `window.MODO_UBICACION` (`simulada` o `real`), actualizada desde la parte superior de la sección de rutas del panel.
 
-PHP escribe estos tres archivos desde el panel; el navegador los lee. `img/<id>/` contiene las imágenes de carrusel.
+PHP escribe estos archivos desde el panel; el navegador los lee. `location-config.js` solo contiene el modo público, sin secretos. `img/<id>/` contiene las imágenes de carrusel.
 
 ### Privados (`database/`)
 

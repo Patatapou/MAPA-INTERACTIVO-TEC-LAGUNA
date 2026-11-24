@@ -5,7 +5,8 @@
 // Único punto que decide qué archivo atiende cada petición.
 // El front controller (`index.php`) solo carga el bootstrap y este router.
 //
-// Rutas públicas: mapa y login.
+// Rutas públicas: mapa y login. Los datos del modo de ubicación son legibles
+// desde el panel, pero el mapa público consume el script estático de frontend.
 // Rutas protegidas: el resto; se valida la sesión ANTES de incluir el archivo.
 // Los endpoints vuelven a comprobar la sesión por sí mismos (defensa en
 // profundidad si se accediera al archivo directamente).
@@ -63,6 +64,8 @@ $rutas = [
     'setEstadoUsuario'  => ['archivo' => BACKEND_PATH . '/api/set-estado-usuario.php', 'auth' => true],
     'resetPasswordUsuario'=> ['archivo' => BACKEND_PATH . '/api/reset-password-usuario.php', 'auth' => true],
     'deleteUsuario'     => ['archivo' => BACKEND_PATH . '/api/delete-usuario.php', 'auth' => true],
+
+    'get-location-mode' => ['archivo' => BACKEND_PATH . '/api/get-location-mode.php', 'auth' => true],
 ];
 
 $ruta = $rutas[$pagina] ?? null;

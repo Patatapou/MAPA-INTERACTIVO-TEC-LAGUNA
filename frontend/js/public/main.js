@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURACIÓN DE DESARROLLO
 // ==========================================
-const USE_GPS_LOCATION = false; // true = GPS real del navegador, false = Simulación por Beacons
+var USE_GPS_LOCATION = false; // El modo se carga desde la configuración del panel.
 
 // ==========================================
 // VARIABLES GLOBALES
@@ -42,6 +42,8 @@ var selectedDestinationId = null;
 var activeRouteLine = null;
 var startPointMarker = null;
 var endPointMarker = null;
+var rutaFinalizada = false;
+const RADIO_LLEGADA_METROS = 10;
 
 // Beacons en el campus (se cargan al inicializar si estamos en simulación o como referencia)
 const beaconsData = [
@@ -201,7 +203,7 @@ fetch('data/caminitos.geojson')
             style: {
                 color: '#0000ffff',
                 weight: 4,
-                opacity: 0.8,
+                opacity: 0,
                 lineCap: 'round'
             }
         }).addTo(map);
@@ -219,44 +221,81 @@ fetch('data/caminitos.geojson')
 // INICIALIZACIÓN DE LOCALIZACIÓN
 // ==========================================
 
-if (USE_GPS_LOCATION) {
-    console.log("Iniciando en modo GPS Real");
-    startGeolocation();
-} else {
-    console.log("Iniciando en modo Simulación por Beacons");
-    // Dibujar beacons en el mapa
-    beaconsData.forEach(function (b) { b.agregarAlMapa(map); });
+function inicializarLocalizacion() {
+    if (USE_GPS_LOCATION) {
+        console.log("Iniciando en modo GPS Real");
+        startGeolocation();
+    } else {
+        console.log("Iniciando en modo Simulación por Beacons");
+        // Dibujar beacons en el mapa
+        beaconsData.forEach(function (b) { b.agregarAlMapa(map); });
 
-    // Crear simulador y ubicación simulada arrastrable en el centro del campus
-    simulador = new SimuladorBeacons(beaconsData);
-    ubicacionSim = new UbicacionSimulada(map, 25.5324, -103.436);
+        // Crear simulador y ubicación simulada arrastrable en el centro del campus
+        simulador = new SimuladorBeacons(beaconsData);
+        ubicacionSim = new UbicacionSimulada(map, 25.5324, -103.436);
 
-    // Escuchar el movimiento del marcador simulado
-    ubicacionSim.onChange = function (pos) {
-        let posEstimada = simulador.trilaterar(pos);
-        if (posEstimada) {
-            if (window.estimacionMarker) {
-                window.estimacionMarker.setLatLng([posEstimada.lat, posEstimada.lng]);
-            } else {
-                window.estimacionMarker = L.circleMarker([posEstimada.lat, posEstimada.lng], {
-                    color: 'darkred',
-                    fillColor: 'red',
-                    radius: 6,
-                    weight: 2,
-                    fillOpacity: 0.8
-                }).addTo(map).bindTooltip('Estimado por beacons');
+        // Escuchar el movimiento del marcador simulado
+        ubicacionSim.onChange = function (pos) {
+            let posEstimada = simulador.trilaterar(pos);
+            if (posEstimada) {
+                if (window.estimacionMarker) {
+                    window.estimacionMarker.setLatLng([posEstimada.lat, posEstimada.lng]);
+                } else {
+                    window.estimacionMarker = L.circleMarker([posEstimada.lat, posEstimada.lng], {
+                        color: 'darkred',
+                        fillColor: 'red',
+                        radius: 6,
+                        weight: 2,
+                        fillOpacity: 0.8
+                    }).addTo(map).bindTooltip('Estimado por beacons');
+                }
             }
-        }
 
-        // Si hay una ruta activa calculada desde la ubicación del usuario, actualizarla en tiempo real
-        if (selectedDestinationId && !selectedDoorId) {
-            calcularRuta(pos, selectedDestinationId, "Mi ubicación (Simulada)");
-        }
-    };
+            actualizarEstadoLlegada(pos);
 
-    // Ejecutar inicialización de la posición simulada
-    ubicacionSim.actualizar();
+            // Si hay una ruta activa calculada desde la ubicación del usuario, actualizarla en tiempo real
+            if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
+                calcularRuta(pos, selectedDestinationId, "Mi ubicación (Simulada)");
+            }
+        };
+
+        // Ejecutar inicialización de la posición simulada
+        ubicacionSim.actualizar();
+    }
 }
+
+function cargarModoUbicacion() {
+    return new Promise(function (resolve, reject) {
+        var script = document.createElement('script');
+        script.src = 'data/location-config.js?v=' + Date.now();
+        script.onload = function () {
+            var modo = window.MODO_UBICACION;
+            if (script.parentNode) script.parentNode.removeChild(script);
+            if (modo !== 'real' && modo !== 'simulada') {
+                reject(new Error('El modo de ubicación no es válido.'));
+                return;
+            }
+            resolve(modo);
+        };
+        script.onerror = function () {
+            if (script.parentNode) script.parentNode.removeChild(script);
+            reject(new Error('No se pudo cargar data/location-config.js.'));
+        };
+        document.head.appendChild(script);
+    });
+}
+
+cargarModoUbicacion()
+    .then(function (modo) {
+        USE_GPS_LOCATION = modo === 'real';
+        inicializarLocalizacion();
+    })
+    .catch(function (error) {
+        console.error('No se pudo cargar el modo de ubicación:', error);
+        USE_GPS_LOCATION = false;
+        mostrarAviso('No se pudo cargar la configuración de ubicación. Se usará el modo simulado.');
+        inicializarLocalizacion();
+    });
 
 // ==========================================
 // GEOLOCALIZACIÓN REAL (Nativa)
@@ -293,6 +332,8 @@ function startGeolocation() {
 
             currentPosition = [avgLat, avgLng];
 
+            actualizarEstadoLlegada({ lat: avgLat, lng: avgLng });
+
             if (userMarker) {
                 userMarker.setLatLng([avgLat, avgLng]);
             } else {
@@ -320,7 +361,7 @@ function startGeolocation() {
             }
 
             // Si hay ruta activa y no hay puerta seleccionada, recalculamos desde la nueva posición real
-            if (selectedDestinationId && !selectedDoorId) {
+            if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
                 calcularRuta({ lat: avgLat, lng: avgLng }, selectedDestinationId, "Mi ubicación (GPS)");
             }
         },
@@ -377,6 +418,67 @@ function centerOnLocation() {
             map.setView([ubicacionSim.lat, ubicacionSim.lng], 19);
         }
     }
+}
+
+function obtenerPosicionUsuario() {
+    if (USE_GPS_LOCATION) {
+        return currentPosition
+            ? { lat: currentPosition[0], lng: currentPosition[1] }
+            : null;
+    }
+    return ubicacionSim ? ubicacionSim.getPosicion() : null;
+}
+
+function actualizarEstadoLlegada(posicion) {
+    if (!activeRouteLine || !selectedDestinationId || rutaFinalizada || !posicion) return;
+
+    var destino = capasEdificios[selectedDestinationId];
+    if (!destino) return;
+
+    var centroDestino = destino.getBounds().getCenter();
+    var distanciaAlDestino = distanciaMetros(
+        posicion.lat,
+        posicion.lng,
+        centroDestino.lat,
+        centroDestino.lng
+    );
+
+    if (distanciaAlDestino <= RADIO_LLEGADA_METROS) {
+        rutaFinalizada = true;
+        finalizarRecorrido();
+    }
+}
+
+function finalizarRecorrido() {
+    if (activeRouteLine) {
+        map.removeLayer(activeRouteLine);
+        activeRouteLine = null;
+    }
+    if (startPointMarker) {
+        map.removeLayer(startPointMarker);
+        startPointMarker = null;
+    }
+    if (endPointMarker) {
+        map.removeLayer(endPointMarker);
+        endPointMarker = null;
+    }
+
+    var panel = document.getElementById('navigation-info-panel');
+    if (!panel) return;
+
+    panel.innerHTML = '';
+    var mensajeLlegada = document.createElement('div');
+    mensajeLlegada.className = 'nav-info-header';
+    mensajeLlegada.setAttribute('role', 'status');
+    mensajeLlegada.textContent = '¡Llegaste a tu destino!';
+
+    var botonCerrar = document.createElement('button');
+    botonCerrar.type = 'button';
+    botonCerrar.id = 'clear-route-btn';
+    botonCerrar.setAttribute('data-accion', 'limpiar-ruta');
+    botonCerrar.textContent = 'Cerrar';
+    panel.appendChild(mensajeLlegada);
+    panel.appendChild(botonCerrar);
 }
 
 // ==========================================
@@ -592,6 +694,7 @@ window.iniciarRuta = function (destId) {
     }
 
     // 4. Calcular y dibujar la ruta
+    rutaFinalizada = false;
     calcularRuta(origCoors, destId, origName);
 };
 
@@ -662,6 +765,7 @@ function calcularRuta(origCoors, destId, origName) {
 
     // Mostrar panel flotante con la información de navegación
     mostrarPanelNavegacion(origName, destName, distanciaTotal);
+    actualizarEstadoLlegada(obtenerPosicionUsuario());
 
     // Cerrar cualquier popup abierto
     map.closePopup();
@@ -705,6 +809,15 @@ function mostrarPanelNavegacion(origen, destino, distancia) {
     detalles.appendChild(crearFilaNavegacion('Desde:', String(origen)));
     detalles.appendChild(crearFilaNavegacion('Hasta:', String(destino)));
     detalles.appendChild(crearFilaNavegacion('Distancia:', distancia + ' metros', 'nav-dist'));
+    var filaEstado = crearFilaNavegacion(
+        'Estado:',
+        rutaFinalizada ? '¡Llegaste! Recorrido finalizado.' : 'En camino',
+        'nav-route-status' + (rutaFinalizada ? ' route-completed' : '')
+    );
+    filaEstado.querySelector('span').id = 'navigation-route-status';
+    filaEstado.querySelector('span').setAttribute('role', 'status');
+    filaEstado.querySelector('span').setAttribute('aria-live', 'polite');
+    detalles.appendChild(filaEstado);
 
     var boton = document.createElement('button');
     boton.type = 'button';
@@ -741,6 +854,7 @@ window.limpiarRuta = function () {
     if (selectEl) selectEl.value = "";
     selectedDoorId = null;
     selectedDestinationId = null;
+    rutaFinalizada = false;
 
     let panel = document.getElementById('navigation-info-panel');
     if (panel) {
@@ -843,6 +957,7 @@ document.getElementById('doors-select').addEventListener('change', function (e) 
 
         // Si hay un destino seleccionado actualmente, recalculamos la ruta desde la puerta elegida
         if (selectedDestinationId) {
+            rutaFinalizada = false;
             calcularRuta(centro, selectedDestinationId, doorName);
         }
     }

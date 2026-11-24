@@ -50,12 +50,29 @@ $configRutas = [
     'max_segmentos_por_ruta' => 500,
     'max_salto_enlace_m' => 80,
 ];
+$modoUbicacion = 'simulada';
+$rutaModoUbicacion = PUBLIC_DATA_PATH . '/location-config.js';
+if (file_exists($rutaModoUbicacion)) {
+    $contenidoModoUbicacion = file_get_contents($rutaModoUbicacion);
+    if (
+        $contenidoModoUbicacion !== false
+        && preg_match(
+            '/\Awindow\.MODO_UBICACION\s*=\s*[\'"](real|simulada)[\'"];\s*\z/',
+            trim($contenidoModoUbicacion),
+            $coincidenciaModo
+        ) === 1
+    ) {
+        $modoUbicacion = $coincidenciaModo[1];
+    }
+}
 $rutaSettings = RUNTIME_PATH . '/settings.json';
 if (file_exists($rutaSettings)) {
     $contenidoSettings = file_get_contents($rutaSettings);
     $settings = $contenidoSettings !== false ? json_decode($contenidoSettings, true) : null;
-    if (is_array($settings) && is_array($settings['rutas'] ?? null)) {
-        $configRutas = array_merge($configRutas, $settings['rutas']);
+    if (is_array($settings)) {
+        if (is_array($settings['rutas'] ?? null)) {
+            $configRutas = array_merge($configRutas, $settings['rutas']);
+        }
     }
 }
 ?>
@@ -79,10 +96,21 @@ if (file_exists($rutaSettings)) {
         <div>
             <h1>Rutas del campus</h1>
             <p style="margin: 4px 0 0; font-size: 12px; opacity: .85;">
-                Recorridos administrativos sobre la red de caminos. No cambian el cálculo del mapa público.
+                Gestiona rutas y el modo de ubicación.
             </p>
         </div>
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div class="modo-ubicacion-control">
+                <label for="modo-ubicacion">Ubicación: </label>
+                <select id="modo-ubicacion">
+                    <option value="simulada" <?= $modoUbicacion === 'simulada' ? 'selected' : '' ?>>Simulada (beacons)</option>
+                    <option value="real" <?= $modoUbicacion === 'real' ? 'selected' : '' ?>>Real (GPS)</option>
+                </select>
+                <button type="button" class="btn btn-primary" id="guardar-modo-ubicacion">Guardar</button>
+                <span class="modo-ubicacion-estado" id="modo-ubicacion-estado" role="status" aria-live="polite">
+                    
+                </span>
+            </div>
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar'">← Panel</button>
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar-red'">🗺️ Red de caminos</button>
             <a href="index.php?p=rutas&accion=nueva" class="btn btn-primary">➕ Nueva ruta</a>
@@ -197,12 +225,14 @@ if (file_exists($rutaSettings)) {
         'idInicial' => $idInicial,
         'datos' => $datosEdificios,
         'config' => $configRutas,
+        'locationMode' => $modoUbicacion,
         'tipos' => ['principal', 'alterna', 'acceso', 'emergencia', 'institucional'],
         'estados' => ['activa', 'inactiva', 'borrador'],
         'urls' => [
             'getRutas' => 'index.php?p=getRutas',
             'deleteRuta' => 'index.php?p=deleteRuta',
             'getRedCaminos' => 'index.php?p=getRedCaminos',
+            'locationMode' => 'index.php?p=get-location-mode',
             'editor' => 'index.php?p=rutas&accion=editar&id=',
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
