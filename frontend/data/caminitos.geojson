@@ -8773,9 +8773,39 @@
                     ]
                 ]
             }
+        },
+        {
+            "type": "Feature",
+            "id": "seg-000340",
+            "properties": {
+                "id": "seg-000340",
+                "nombre": "Segmento 334",
+                "tipo": "peatonal",
+                "accesible": true,
+                "estado": "activa",
+                "creado_en": "2026-11-25T23:40:46+00:00",
+                "actualizado_en": "2026-11-25T23:40:46+00:00"
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [
+                        -103.43462935595592,
+                        25.534590086942544
+                    ],
+                    [
+                        -103.43463471645644,
+                        25.53443571110304
+                    ],
+                    [
+                        -103.43476599238328,
+                        25.534460999933273
+                    ]
+                ]
+            }
         }
     ],
     "schema_version": 2,
-    "revision": 15,
-    "next_seq": 340
+    "revision": 16,
+    "next_seq": 341
 }

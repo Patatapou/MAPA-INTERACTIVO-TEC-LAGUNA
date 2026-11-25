@@ -111,7 +111,7 @@ function Wait-ForAdminServer {
             }
         }
 
-        if (($now - $lastHeartbeat).TotalSeconds -ge 30) {
+        if (($now - $lastHeartbeat).TotalSeconds -ge 300) {
             Stop-ServerProcess -Process $Process
             return
         }

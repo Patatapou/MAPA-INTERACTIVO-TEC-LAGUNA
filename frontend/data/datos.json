@@ -5,7 +5,11 @@
         "aulas": [
             "SERVICIO SOCIAL",
             "RESIDENCIAS(EMPRESAS)"
-        ]
+        ],
+        "carpeta": [
+            "2"
+        ],
+        "tipo": "edificio"
     },
     "1A": {
         "nombre": "Edificio 1A",
@@ -602,6 +606,21 @@
         "aulas": [],
         "carpeta": [
             "1V"
+        ],
+        "tipo": "edificio",
+        "imagenes": []
+    },
+    "rgf": {
+        "nombre": "rerefrregf",
+        "descripcion": "regfre",
+        "aulas": [
+            "Jefatura",
+            "nfjhe",
+            "wf",
+            "s"
+        ],
+        "carpeta": [
+            "rgf"
         ],
         "tipo": "edificio",
         "imagenes": []
