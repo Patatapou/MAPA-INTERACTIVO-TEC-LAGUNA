@@ -50,7 +50,6 @@
 }
 
 .ajustes-contenido {
-    max-width: 760px;
     max-height: min(90vh, 900px);
     overflow-y: auto;
 }
@@ -539,6 +538,12 @@
     max-width: 440px;
     width: 100%;
     padding: 24px 26px;
+}
+
+.modal-caja.ajustes-contenido {
+    width: min(1000px, calc(100vw - 40px));
+    max-width: 1000px;
+    box-sizing: border-box;
 }
 
 .modal-caja h3 {

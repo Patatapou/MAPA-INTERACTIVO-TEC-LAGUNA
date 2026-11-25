@@ -414,6 +414,10 @@ input:focus, textarea:focus {
     background: #d1d5db;
 }
 
+#publish-map-cancel[hidden] {
+    display: none;
+}
+
 @media (max-width: 600px) {
     .btn-publish-map {
         right: 14px;
