@@ -246,21 +246,6 @@
                     ]
                 ]
             }
-        },
-        {
-            "id": "ruta-fb157539",
-            "nombre": "Mercatec",
-            "descripcion": "Ir al mercatec",
-            "tipo": "institucional",
-            "destino": {
-                "tipo": "edificio",
-                "ref": "V",
-                "nombre": "Velaria"
-            },
-            "distancia_m": null,
-            "origen_usuario": true,
-            "dinamica": true,
-            "geometria": null
         }
     ]
 }
