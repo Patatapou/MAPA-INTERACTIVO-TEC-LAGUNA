@@ -173,7 +173,11 @@
             "LABORATORIO DE FISICO QUIMICA",
             "14A",
             "14B"
-        ]
+        ],
+        "carpeta": [
+            "14"
+        ],
+        "tipo": "edificio"
     },
     "15": {
         "nombre": "Edificio 15",
