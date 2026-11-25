@@ -42,7 +42,6 @@ var selectedDoorId = null;
 var selectedDestinationId = null;
 var activeRouteLine = null;
 var publicRouteLine = null;
-var publicRouteArrows = null;
 var selectedPublicRoute = null;
 var publicRoutes = [];
 var startPointMarker = null;
@@ -901,10 +900,6 @@ function limpiarCapaRutaPublica() {
         map.removeLayer(publicRouteLine);
         publicRouteLine = null;
     }
-    if (publicRouteArrows) {
-        map.removeLayer(publicRouteArrows);
-        publicRouteArrows = null;
-    }
 }
 
 function coordenadasPublicas(ruta) {
@@ -977,34 +972,6 @@ function calcularRutaPublicaDinamica(ruta, posicion) {
     return nodos.map(function (punto) { return [punto.lat, punto.lng]; });
 }
 
-function agregarFlechasRuta(coordenadas) {
-    publicRouteArrows = L.layerGroup().addTo(map);
-    var ultimaDistancia = 0;
-    var siguienteFlecha = 45;
-    for (var i = 0; i < coordenadas.length - 1; i++) {
-        var inicio = coordenadas[i];
-        var fin = coordenadas[i + 1];
-        var tramo = distanciaMetros(inicio[0], inicio[1], fin[0], fin[1]);
-        while (ultimaDistancia + tramo >= siguienteFlecha) {
-            var proporcion = (siguienteFlecha - ultimaDistancia) / tramo;
-            var lat = inicio[0] + (fin[0] - inicio[0]) * proporcion;
-            var lng = inicio[1] + (fin[1] - inicio[1]) * proporcion;
-            var bearing = Math.atan2(fin[1] - inicio[1], fin[0] - inicio[0]) * 180 / Math.PI;
-            var marcador = L.marker([lat, lng], {
-                interactive: false,
-                keyboard: false,
-                icon: L.divIcon({ className: 'public-route-arrow', html: '<span>➤</span>', iconSize: [18, 18], iconAnchor: [9, 9] })
-            }).addTo(publicRouteArrows);
-            var elemento = marcador.getElement();
-            if (elemento && elemento.firstElementChild) {
-                elemento.firstElementChild.style.transform = 'rotate(' + (-bearing) + 'deg)';
-            }
-            siguienteFlecha += 45;
-        }
-        ultimaDistancia += tramo;
-    }
-}
-
 function dibujarRutaPublica(ruta, coordenadas, ajustarVista) {
     limpiarCapaRutaPublica();
     if (!Array.isArray(coordenadas) || coordenadas.length < 2) return false;
@@ -1017,7 +984,6 @@ function dibujarRutaPublica(ruta, coordenadas, ajustarVista) {
         lineJoin: 'round',
         className: 'animated-route-line'
     }).addTo(map);
-    agregarFlechasRuta(coordenadas);
     if (ajustarVista) map.fitBounds(publicRouteLine.getBounds(), { padding: [60, 60] });
     var metrosRuta = calcularDistanciaRuta(coordenadas.map(function (punto) {
         return { lat: punto[0], lng: punto[1] };
