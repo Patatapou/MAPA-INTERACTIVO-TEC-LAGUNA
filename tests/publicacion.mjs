@@ -69,6 +69,20 @@ function existeArchivo(relativa) {
     return fs.existsSync(ruta) && fs.statSync(ruta).isFile();
 }
 
+const camposPrivados = /(?:creado_por|actualizado_por|password|audit|csrf|session)/i;
+
+function contieneCampoPrivado(valor) {
+    if (Array.isArray(valor)) {
+        return valor.some(contieneCampoPrivado);
+    }
+    if (!valor || typeof valor !== 'object') {
+        return false;
+    }
+    return Object.entries(valor).some(([clave, contenido]) =>
+        camposPrivados.test(clave) || contieneCampoPrivado(contenido)
+    );
+}
+
 console.log('\n[1] Archivos que se publican');
 const archivosSinImagenes = listarArchivos(['img', 'tiles']);
 const php = archivosSinImagenes.filter((f) => f.endsWith('.php'));
@@ -178,12 +192,14 @@ try {
     rutasPublicas = JSON.parse(leer('data/rutas-publicas.json'));
     comprobar('rutas-publicas.json tiene el esquema estático esperado',
         rutasPublicas && rutasPublicas.schema_version === 1 && Array.isArray(rutasPublicas.rutas));
-    const camposPrivados = /(?:creado_por|actualizado_por|password|audit|csrf|session)/i;
     comprobar('rutas-publicas.json no expone campos privados',
-        !camposPrivados.test(JSON.stringify(rutasPublicas)));
+        !contieneCampoPrivado(rutasPublicas));
+    comprobar('el detector encuentra campos privados anidados',
+        contieneCampoPrivado({ ruta: { creado_por: 'admin' } }));
 } catch (error) {
     comprobar('rutas-publicas.json tiene el esquema estático esperado', false, error.message);
     comprobar('rutas-publicas.json no expone campos privados', false, error.message);
+    comprobar('el detector encuentra campos privados anidados', false, error.message);
 }
 
 try {
