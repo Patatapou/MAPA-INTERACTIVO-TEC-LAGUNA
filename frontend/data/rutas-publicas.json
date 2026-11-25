@@ -248,59 +248,19 @@
             }
         },
         {
-            "id": "ruta-45f7d2ce",
-            "nombre": "Acceso al Edificio 1B por puerta 6",
-            "descripcion": "Acceso a SERVICIOS ESCOLARES, ENFERMERIA, DIVISION DE ESTUDIOS PROFESIONALES y COORDINACIONES DE CARRERA",
+            "id": "ruta-fb157539",
+            "nombre": "Mercatec",
+            "descripcion": "Ir al mercatec",
             "tipo": "institucional",
             "destino": {
                 "tipo": "edificio",
-                "ref": "1B",
-                "nombre": "Edificio 1B"
+                "ref": "V",
+                "nombre": "Velaria"
             },
-            "distancia_m": 173.7,
-            "origen_usuario": false,
-            "dinamica": false,
-            "geometria": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        -103.43493999715383,
-                        25.53511579096918
-                    ],
-                    [
-                        -103.43493965157647,
-                        25.53515258592892
-                    ],
-                    [
-                        -103.43541205523843,
-                        25.535153211860987
-                    ],
-                    [
-                        -103.43541158290269,
-                        25.53503700138027
-                    ],
-                    [
-                        -103.4356935696055,
-                        25.535039111593548
-                    ],
-                    [
-                        -103.43580396923836,
-                        25.53504002550179
-                    ],
-                    [
-                        -103.43629272806662,
-                        25.53504407153628
-                    ],
-                    [
-                        -103.43634808942471,
-                        25.535181217236644
-                    ],
-                    [
-                        -103.43639672201257,
-                        25.535181217236644
-                    ]
-                ]
-            }
+            "distancia_m": null,
+            "origen_usuario": true,
+            "dinamica": true,
+            "geometria": null
         }
     ]
 }

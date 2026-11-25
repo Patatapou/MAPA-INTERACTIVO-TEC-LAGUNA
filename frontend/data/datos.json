@@ -591,5 +591,15 @@
         ],
         "tipo": "edificio",
         "imagenes": []
+    },
+    "V": {
+        "nombre": "Velaria",
+        "descripcion": "Este edificio corresponde a la velaria, donde ocasionalmente se realizan eventos.",
+        "aulas": [],
+        "carpeta": [
+            "V"
+        ],
+        "tipo": "edificio",
+        "imagenes": []
     }
 }
