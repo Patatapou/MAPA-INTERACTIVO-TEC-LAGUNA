@@ -11,6 +11,7 @@
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
+require_once __DIR__ . '/../services/RouteSettingsService.php';
 requerirAdmin();
 
 $modo = (isset($_GET['accion']) && $_GET['accion'] === 'editar') ? 'editar' : 'nuevo';
@@ -39,19 +40,8 @@ if (file_exists($rutaDatos)) {
     }
 }
 
-$configRutas = [
-    'tolerancia_continuidad_m' => 2.5,
-    'max_segmentos_por_ruta' => 500,
-    'max_salto_enlace_m' => 80,
-];
-$rutaSettings = RUNTIME_PATH . '/settings.json';
-if (file_exists($rutaSettings)) {
-    $contenidoSettings = file_get_contents($rutaSettings);
-    $settings = $contenidoSettings !== false ? json_decode($contenidoSettings, true) : null;
-    if (is_array($settings) && is_array($settings['rutas'] ?? null)) {
-        $configRutas = array_merge($configRutas, $settings['rutas']);
-    }
-}
+$configuracionMapa = (new RouteSettingsService())->obtener();
+$configRutas = $configuracionMapa['rutas'];
 
 $titulo = $modo === 'editar' ? 'Editar ruta' : 'Nueva ruta';
 ?>
@@ -172,6 +162,7 @@ $titulo = $modo === 'editar' ? 'Editar ruta' : 'Nueva ruta';
                             <option value="edificio">Edificio</option>
                             <option value="acceso">Acceso</option>
                             <option value="nodo">Nodo de la red</option>
+                            <option value="ubicacion_usuario">Ubicación del usuario</option>
                         </select>
                         <select id="origen-ref" name="origen_ref"></select>
                     </div>
@@ -211,6 +202,7 @@ $titulo = $modo === 'editar' ? 'Editar ruta' : 'Nueva ruta';
         'csrfToken' => $csrfToken,
         'datos' => $datosEdificios,
         'config' => $configRutas,
+        'estilos' => $configuracionMapa['estilos'],
         'urls' => [
             'getRutas' => 'index.php?p=getRutas',
             'getRedCaminos' => 'index.php?p=getRedCaminos',

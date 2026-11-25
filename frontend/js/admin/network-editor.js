@@ -53,6 +53,12 @@ document.addEventListener('DOMContentLoaded', function () {
     var RED_CSRF = String(window.RED_CSRF || '');
     var RED_PAIRS = Array.isArray(window.RED_PAIRS) ? window.RED_PAIRS : [];
     var RED_METADATOS = window.RED_METADATOS || {};
+    var RED_ESTILOS_MAPA = window.RED_ESTILOS_MAPA || {};
+    var ESTILO_EDIFICIOS_ADMIN = RED_ESTILOS_MAPA.edificios_admin || {
+        contorno: { color: '#000000', grosor: 1, opacidad: 1 },
+        relleno: { color: '#9aa5b1', opacidad: 0.9 }
+    };
+    var ESTILO_SEGMENTOS = RED_ESTILOS_MAPA.segmentos || { color: '#0b57d0', grosor: 6, opacidad: 1 };
     var URL_GUARDAR = window.RED_URL_GUARDAR || 'index.php?p=save-red';
     var URL_ESTADO = window.RED_URL_ESTADO || 'index.php?p=getRed';
 
@@ -322,11 +328,11 @@ document.addEventListener('DOMContentLoaded', function () {
             pane: 'fondoRed',
             style: function () {
                 return {
-                    color: '#4b5563',
-                    weight: 1.2,
-                    opacity: 0.85,
-                    fillColor: '#9ca3af',
-                    fillOpacity: 0.18
+                    color: ESTILO_EDIFICIOS_ADMIN.contorno.color,
+                    weight: ESTILO_EDIFICIOS_ADMIN.contorno.grosor,
+                    opacity: ESTILO_EDIFICIOS_ADMIN.contorno.opacidad,
+                    fillColor: ESTILO_EDIFICIOS_ADMIN.relleno.color,
+                    fillOpacity: ESTILO_EDIFICIOS_ADMIN.relleno.opacidad
                 };
             }
         }).addTo(map);
@@ -380,7 +386,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (st === 'modificado') {
             return { color: '#ea580c', weight: 7, opacity: 1 };
         }
-        return { color: '#0891b2', weight: 6, opacity: 0.95 };
+        return {
+            color: ESTILO_SEGMENTOS.color,
+            weight: ESTILO_SEGMENTOS.grosor,
+            opacity: ESTILO_SEGMENTOS.opacidad
+        };
     }
 
     function renderRed() {

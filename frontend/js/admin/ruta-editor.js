@@ -14,15 +14,17 @@
     var urls = cfg.urls || {};
     var datos = cfg.datos || {};
     var config = cfg.config || {};
-    var tolerancia = Number(config.tolerancia_continuidad_m) || 2.5;
+    var tolerancia = Number(config.tolerancia_continuidad_m) || 1.5;
+    var estilosMapa = cfg.estilos || {};
 
-    // Estilos de la red: azul marino oscuro con contorno claro para que los
-    // caminos se distingan sobre la imagen satelital.
+    var estiloCaminos = estilosMapa.caminos || { color: '#12306b', grosor: 4, opacidad: 0.85 };
+    var estiloSegmentos = estilosMapa.segmentos || { color: '#0b57d0', grosor: 6, opacidad: 1 };
+    var estiloRutaAdmin = estilosMapa.ruta_admin || { color: '#1161ee', grosor: 6, opacidad: 1 };
     var ESTILOS_RED = {
-        base: { color: '#12306b', weight: 5, opacity: 0.9 },
-        contiguo: { color: '#0b57d0', weight: 6, opacity: 1 },
+        base: { color: estiloCaminos.color, weight: estiloCaminos.grosor, opacity: estiloCaminos.opacidad },
+        contiguo: { color: estiloSegmentos.color, weight: estiloSegmentos.grosor, opacity: estiloSegmentos.opacidad },
         noContiguo: { color: '#7d8ba3', weight: 4, opacity: 0.35 },
-        cadena: { color: '#0b57d0', weight: 6, opacity: 1 }
+        cadena: { color: estiloRutaAdmin.color, weight: estiloRutaAdmin.grosor, opacity: estiloRutaAdmin.opacidad }
     };
     var COLOR_CONTORNO = '#f8fafc';
     // Radio de acierto del clic, en píxeles (independiente del zoom).
@@ -145,11 +147,11 @@
             smoothFactor: 0,
             style: function () {
                 return {
-                    color: '#000000',
-                    weight: 1,
-                    opacity: 1,
-                    fillColor: '#9aa5b1',
-                    fillOpacity: 0.9
+                    color: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.color : '#000000',
+                    weight: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.grosor : 1,
+                    opacity: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.opacidad : 1,
+                    fillColor: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.relleno.color : '#9aa5b1',
+                    fillOpacity: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.relleno.opacidad : 0.9
                 }; 
             }
         }
@@ -303,10 +305,13 @@
                 descartados.push(referencia.id);
                 return false;
             }).map(function (referencia) {
-                return {
+                var referenciaLimpia = {
                     id: referencia.id,
                     sentido: referencia.sentido === 'inverso' ? 'inverso' : 'normal'
                 };
+                if (Number.isFinite(Number(referencia.desde))) referenciaLimpia.desde = Number(referencia.desde);
+                if (Number.isFinite(Number(referencia.hasta))) referenciaLimpia.hasta = Number(referencia.hasta);
+                return referenciaLimpia;
             });
 
             if (descartados.length > 0) {
@@ -346,11 +351,12 @@
         tipoEl.value = tipo;
 
         var esNodo = tipo === 'nodo';
-        refEl.hidden = esNodo;
+        var esUbicacionUsuario = cual === 'origen' && tipo === 'ubicacion_usuario';
+        refEl.hidden = esNodo || esUbicacionUsuario;
         nodoEl.hidden = !esNodo;
 
         limpiar(refEl);
-        if (esNodo) {
+        if (esNodo || esUbicacionUsuario) {
             return;
         }
 
@@ -385,6 +391,9 @@
         var refEl = cual === 'origen' ? dom.origenRef : dom.destinoRef;
         var nodoEl = cual === 'origen' ? dom.origenNodo : dom.destinoNodo;
         var tipo = tipoEl.value;
+        if (cual === 'origen' && tipo === 'ubicacion_usuario') {
+            return { tipo: tipo, ref: '' };
+        }
         return {
             tipo: tipo,
             ref: tipo === 'nodo' ? nodoEl.value.trim() : refEl.value
@@ -393,12 +402,12 @@
 
     function extremosCadena() {
         if (estado.cadena.length === 0) { return { inicio: null, fin: null }; }
-        var primero = estado.segmentos.get(estado.cadena[0].id);
-        var ultimo = estado.segmentos.get(estado.cadena[estado.cadena.length - 1].id);
-        if (!primero || !ultimo) { return { inicio: null, fin: null }; }
+        var primero = coordsOrientadas(estado.cadena[0]);
+        var ultimo = coordsOrientadas(estado.cadena[estado.cadena.length - 1]);
+        if (primero.length < 2 || ultimo.length < 2) { return { inicio: null, fin: null }; }
         return {
-            inicio: estado.cadena[0].sentido === 'normal' ? primero.inicio : primero.fin,
-            fin: estado.cadena[estado.cadena.length - 1].sentido === 'normal' ? ultimo.fin : ultimo.inicio
+            inicio: claveNodo(primero[0][0], primero[0][1]),
+            fin: claveNodo(ultimo[ultimo.length - 1][0], ultimo[ultimo.length - 1][1])
         };
     }
 
@@ -443,7 +452,86 @@
     function coordsOrientadas(referencia) {
         var segmento = estado.segmentos.get(referencia.id);
         if (!segmento) { return []; }
-        return referencia.sentido === 'inverso' ? segmento.coords.slice().reverse() : segmento.coords.slice();
+        var coords = referencia.sentido === 'inverso' ? segmento.coords.slice().reverse() : segmento.coords.slice();
+        return recortarCoordenadas(coords, Number(referencia.desde || 0), Number(referencia.hasta === undefined ? 1 : referencia.hasta));
+    }
+
+    function longitudCoordenadas(coords) {
+        var total = 0;
+        for (var i = 1; i < coords.length; i++) {
+            total += distanciaMetros(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+        }
+        return total;
+    }
+
+    function puntoEnDistancia(coords, distancia) {
+        var recorrida = 0;
+        for (var i = 1; i < coords.length; i++) {
+            var tramo = distanciaMetros(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+            if (recorrida + tramo >= distancia) {
+                var proporcion = tramo ? (distancia - recorrida) / tramo : 0;
+                return [
+                    coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * proporcion,
+                    coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * proporcion
+                ];
+            }
+            recorrida += tramo;
+        }
+        return coords[coords.length - 1].slice();
+    }
+
+    function recortarCoordenadas(coords, desde, hasta) {
+        if (coords.length < 2 || desde < 0 || hasta > 1 || desde >= hasta) return [];
+        var total = longitudCoordenadas(coords);
+        if (total <= 0) return [];
+        var inicio = total * desde;
+        var fin = total * hasta;
+        var salida = [puntoEnDistancia(coords, inicio)];
+        var acumulada = 0;
+        for (var i = 1; i < coords.length; i++) {
+            acumulada += distanciaMetros(coords[i - 1][0], coords[i - 1][1], coords[i][0], coords[i][1]);
+            if (acumulada > inicio && acumulada < fin) salida.push(coords[i]);
+        }
+        salida.push(puntoEnDistancia(coords, fin));
+        return salida;
+    }
+
+    function proyectarPuntoEnPolilinea(punto, coords) {
+        if (!punto || coords.length < 2) return null;
+        var latRef = punto.lat * Math.PI / 180;
+        var kx = 111320 * Math.cos(latRef);
+        var ky = 110540;
+        var px = punto.lng * kx;
+        var py = punto.lat * ky;
+        var total = longitudCoordenadas(coords);
+        var acumulada = 0;
+        var mejor = null;
+        for (var i = 1; i < coords.length; i++) {
+            var a = coords[i - 1];
+            var b = coords[i];
+            var ax = a[1] * kx;
+            var ay = a[0] * ky;
+            var bx = b[1] * kx;
+            var by = b[0] * ky;
+            var dx = bx - ax;
+            var dy = by - ay;
+            var largo2 = dx * dx + dy * dy;
+            var t = largo2 === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / largo2;
+            t = Math.max(0, Math.min(1, t));
+            var lat = a[0] + (b[0] - a[0]) * t;
+            var lng = a[1] + (b[1] - a[1]) * t;
+            var distancia = distanciaMetros(punto.lat, punto.lng, lat, lng);
+            var tramo = distanciaMetros(a[0], a[1], b[0], b[1]);
+            if (!mejor || distancia < mejor.distancia) {
+                mejor = {
+                    distancia: distancia,
+                    punto: [lat, lng],
+                    fraccion: total > 0 ? (acumulada + tramo * t) / total : 0
+                };
+            }
+            acumulada += tramo;
+        }
+        return mejor;
     }
 
     function coordsCadena() {
@@ -460,9 +548,114 @@
 
     function distanciaCadena() {
         return estado.cadena.reduce(function (total, referencia) {
-            var segmento = estado.segmentos.get(referencia.id);
-            return total + (segmento ? segmento.longitud : 0);
+            return total + longitudCoordenadas(coordsOrientadas(referencia));
         }, 0);
+    }
+
+    function crearReferencia(id, sentido, desde, hasta) {
+        var referencia = { id: id, sentido: sentido };
+        if (desde > 0.000001) referencia.desde = desde;
+        if (hasta < 0.999999) referencia.hasta = hasta;
+        return referencia;
+    }
+
+    function extensionInterior(segmento, punto, agregarAlFinal) {
+        var proyeccion = proyectarPuntoEnPolilinea(
+            { lat: punto[0], lng: punto[1] },
+            segmento.coords
+        );
+        if (!proyeccion || proyeccion.distancia > tolerancia) return null;
+        var inicio = segmento.coords[0];
+        var fin = segmento.coords[segmento.coords.length - 1];
+        var distanciaInicio = distanciaMetros(proyeccion.punto[0], proyeccion.punto[1], inicio[0], inicio[1]);
+        var distanciaFin = distanciaMetros(proyeccion.punto[0], proyeccion.punto[1], fin[0], fin[1]);
+        var fraccion = proyeccion.fraccion;
+
+        if (agregarAlFinal) {
+            return distanciaFin <= distanciaInicio
+                ? crearReferencia(segmento.id, 'normal', fraccion, 1)
+                : crearReferencia(segmento.id, 'inverso', 1 - fraccion, 1);
+        }
+        return distanciaInicio <= distanciaFin
+            ? crearReferencia(segmento.id, 'normal', 0, fraccion)
+            : crearReferencia(segmento.id, 'inverso', 0, 1 - fraccion);
+    }
+
+    function extensionDesdeExtremo(segmento, extremos) {
+        var opciones = [];
+        var alFinal = extensionInterior(segmento, extremos.fin.split(',').map(Number), true);
+        if (alFinal) {
+            var finCoords = coordsOrientadas(alFinal);
+            var puntoFinCadena = extremos.fin.split(',').map(Number);
+            opciones.push({
+                lado: 'final',
+                referencia: alFinal,
+                distancia: distanciaMetros(puntoFinCadena[0], puntoFinCadena[1], finCoords[0][0], finCoords[0][1])
+            });
+        }
+        var alInicio = extensionInterior(segmento, extremos.inicio.split(',').map(Number), false);
+        if (alInicio) {
+            var inicioCoords = coordsOrientadas(alInicio);
+            var puntoInicioCadena = extremos.inicio.split(',').map(Number);
+            opciones.push({
+                lado: 'inicio',
+                referencia: alInicio,
+                distancia: distanciaMetros(puntoInicioCadena[0], puntoInicioCadena[1], inicioCoords[inicioCoords.length - 1][0], inicioCoords[inicioCoords.length - 1][1])
+            });
+        }
+        opciones.sort(function (a, b) { return a.distancia - b.distancia; });
+        return opciones.length ? opciones[0] : null;
+    }
+
+    function recortarCadenaHasta(fraccion) {
+        var total = distanciaCadena();
+        if (total <= 0) return [];
+        var objetivo = total * Math.max(0, Math.min(1, fraccion));
+        var recorrida = 0;
+        var salida = [];
+        for (var i = 0; i < estado.cadena.length; i++) {
+            var referencia = estado.cadena[i];
+            var coords = coordsOrientadas(referencia);
+            var largo = longitudCoordenadas(coords);
+            var desde = Number(referencia.desde || 0);
+            var hasta = Number(referencia.hasta === undefined ? 1 : referencia.hasta);
+            if (objetivo >= recorrida + largo) {
+                salida.push(Object.assign({}, referencia));
+                recorrida += largo;
+                continue;
+            }
+            var proporcion = largo > 0 ? (objetivo - recorrida) / largo : 0;
+            var nuevoHasta = desde + (hasta - desde) * proporcion;
+            if (proporcion > 0.000001) {
+                salida.push(crearReferencia(referencia.id, referencia.sentido, desde, nuevoHasta));
+            }
+            break;
+        }
+        return salida;
+    }
+
+    function conectarExtremoASegmentoInterior(segmento) {
+        var coordenadasCadena = coordsCadena();
+        var candidatos = [
+            { punto: segmento.coords[0], sentido: 'normal' },
+            { punto: segmento.coords[segmento.coords.length - 1], sentido: 'inverso' }
+        ];
+        var mejor = null;
+        candidatos.forEach(function (candidato) {
+            var proyeccion = proyectarPuntoEnPolilinea(
+                { lat: candidato.punto[0], lng: candidato.punto[1] },
+                coordenadasCadena
+            );
+            if (proyeccion && proyeccion.distancia <= tolerancia && (!mejor || proyeccion.distancia < mejor.distancia)) {
+                mejor = {
+                    fraccion: proyeccion.fraccion,
+                    distancia: proyeccion.distancia,
+                    referencia: crearReferencia(segmento.id, candidato.sentido, 0, 1)
+                };
+            }
+        });
+        if (!mejor) return null;
+        return recortarCadenaHasta(mejor.fraccion).concat([mejor.referencia]);
     }
 
     function alHacerClicSegmento(id, latlng) {
@@ -494,6 +687,28 @@
         } else if (mismaPosicion(segmento.inicio, extremos.inicio)) {
             estado.cadena.unshift({ id: id, sentido: 'inverso' });
         } else {
+            var extension = extensionDesdeExtremo(segmento, extremos);
+            if (extension) {
+                if (extension.lado === 'final') {
+                    estado.cadena.push(extension.referencia);
+                } else {
+                    estado.cadena.unshift(extension.referencia);
+                }
+                marcarSucio();
+                ocultarMensaje();
+                actualizarVistaCadena();
+                return;
+            }
+
+            var conexionAnterior = conectarExtremoASegmentoInterior(segmento);
+            if (conexionAnterior) {
+                estado.cadena = conexionAnterior;
+                marcarSucio();
+                ocultarMensaje();
+                actualizarVistaCadena();
+                return;
+            }
+
             // El clic pudo caer unos píxeles fuera del segmento contiguo:
             // probar con el contiguo más cercano antes de rechazar.
             var alternativa = segmentoContiguoCercano(latlng);
@@ -504,7 +719,7 @@
 
             if (tocaAlgunSegmentoCadena(segmento)) {
                 mostrarMensaje(
-                    'Ese segmento se une al interior de la cadena. Solo se puede continuar por el inicio o el final de la cadena.',
+                    'Ese segmento se conecta con un tramo anterior, pero no se pudo recortar la cadena para conservar un recorrido lineal.',
                     'error'
                 );
                 return;
@@ -548,7 +763,13 @@
     function invertirCadena() {
         if (estado.cadena.length === 0) { return; }
         estado.cadena.reverse().forEach(function (referencia) {
+            var desde = Number(referencia.desde || 0);
+            var hasta = Number(referencia.hasta === undefined ? 1 : referencia.hasta);
             referencia.sentido = referencia.sentido === 'normal' ? 'inverso' : 'normal';
+            referencia.desde = 1 - hasta;
+            referencia.hasta = 1 - desde;
+            if (referencia.desde < 0.000001) delete referencia.desde;
+            if (referencia.hasta > 0.999999) delete referencia.hasta;
         });
         marcarSucio();
         actualizarVistaCadena();
@@ -571,10 +792,25 @@
     function esContiguoExtremo(segmento) {
         var extremos = extremosCadena();
         if (!extremos.inicio || !extremos.fin) { return true; }
-        return mismaPosicion(segmento.inicio, extremos.fin) ||
+        if (mismaPosicion(segmento.inicio, extremos.fin) ||
             mismaPosicion(segmento.fin, extremos.fin) ||
             mismaPosicion(segmento.fin, extremos.inicio) ||
-            mismaPosicion(segmento.inicio, extremos.inicio);
+            mismaPosicion(segmento.inicio, extremos.inicio)) {
+            return true;
+        }
+        var inicio = extremos.inicio.split(',').map(Number);
+        var fin = extremos.fin.split(',').map(Number);
+        if (
+            distanciaPuntoTramo({ lat: inicio[0], lng: inicio[1] }, segmento.coords) <= tolerancia
+            || distanciaPuntoTramo({ lat: fin[0], lng: fin[1] }, segmento.coords) <= tolerancia
+        ) {
+            return true;
+        }
+        var coords = coordsCadena();
+        return [segmento.coords[0], segmento.coords[segmento.coords.length - 1]].some(function (punto) {
+            var proyeccion = proyectarPuntoEnPolilinea({ lat: punto[0], lng: punto[1] }, coords);
+            return proyeccion && proyeccion.distancia <= tolerancia;
+        });
     }
 
     /**
@@ -778,7 +1014,13 @@
             var item = el('li');
             item.appendChild(el('span', 'detalle-seg-orden', String(indice + 1)));
             item.appendChild(el('span', 'detalle-seg-nombre', segmento ? segmento.nombre : referencia.id));
-            item.appendChild(el('span', 'detalle-seg-sentido', referencia.sentido === 'inverso' ? 'inv.' : 'norm.'));
+            var tramoParcial = Number(referencia.desde || 0) > 0.000001
+                || Number(referencia.hasta === undefined ? 1 : referencia.hasta) < 0.999999;
+            item.appendChild(el(
+                'span',
+                'detalle-seg-sentido',
+                (referencia.sentido === 'inverso' ? 'inv.' : 'norm.') + (tramoParcial ? ' · parcial' : '')
+            ));
 
             var quitar = el('button', null, '×');
             quitar.type = 'button';
@@ -790,11 +1032,15 @@
         });
 
         var hayCadena = estado.cadena.length > 0;
+        var origenDinamico = dom.origenTipo.value === 'ubicacion_usuario';
         dom.btnDeshacer.disabled = !hayCadena;
         dom.btnInvertir.disabled = !hayCadena;
         dom.btnLimpiar.disabled = !hayCadena;
         dom.btnZoom.disabled = !hayCadena;
-        dom.btnGuardar.disabled = !hayCadena || estado.guardando;
+        dom.btnGuardar.disabled = (!hayCadena && !origenDinamico) || estado.guardando;
+        dom.cadenaVacia.textContent = origenDinamico
+            ? 'Sin segmentos: se calculará una ruta desde la ubicación del usuario hasta el destino.'
+            : 'Todavía no hay segmentos. Haz clic en un camino del mapa para empezar.';
 
         actualizarEstilosRed();
         dibujarCadena();
@@ -831,15 +1077,15 @@
             valido = false;
         }
 
-        if (estado.cadena.length === 0) {
+        var origen = leerReferencia('origen');
+        if (estado.cadena.length === 0 && origen.tipo !== 'ubicacion_usuario') {
             mostrarMensaje('La ruta necesita al menos un segmento.', 'error');
             valido = false;
         }
 
-        var origen = leerReferencia('origen');
         var destino = leerReferencia('destino');
 
-        if (!origen.ref) {
+        if (origen.tipo !== 'ubicacion_usuario' && !origen.ref) {
             marcarError(dom.errorOrigen, 'Selecciona el origen de la ruta.');
             valido = false;
         }
@@ -915,7 +1161,7 @@
             window.location.href = urls.listado + '&accion=ver&id=' + encodeURIComponent(ruta.id);
         }).catch(function (error) {
             estado.guardando = false;
-            dom.btnGuardar.disabled = estado.cadena.length === 0;
+            dom.btnGuardar.disabled = estado.cadena.length === 0 && dom.origenTipo.value !== 'ubicacion_usuario';
             dom.btnGuardar.textContent = '💾 Guardar ruta';
             mostrarMensaje('✗ ' + error.message, 'error', error.detalles || []);
         });
@@ -964,6 +1210,7 @@
         configurarTipoReferencia('origen', dom.origenTipo.value);
         estado.origenManual = true;
         marcarSucio();
+        actualizarVistaCadena();
     });
 
     dom.destinoTipo.addEventListener('change', function () {

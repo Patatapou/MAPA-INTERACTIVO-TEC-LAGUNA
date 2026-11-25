@@ -21,6 +21,7 @@
     <div id="map"> </div>
     <div class="searchbar-container">
         <div class="searchbar-input-wrapper">
+            <!-- buscador -->
             <input type="text" id="searchbar-input" class="searchbar-input"
                 placeholder="Buscar edificio o aula (ej: 19L, Edificio 19)..." autocomplete="off">
             <button type="button" class="searchbar-button" id="search-btn">🔍</button>
@@ -34,7 +35,21 @@
             rel="noopener noreferrer" title="Sugerir cambios" hidden>Sugerir cambios⚙️</a>
     </div>
 
-    <!-- Panel de Puertas de Acceso (Esquina inferior izquierda) -->
+    <div class="public-routes-control">
+        <button type="button" id="public-routes-toggle" class="location-button" aria-expanded="false"
+            aria-controls="public-routes-list">RUTAS</button>
+        <section id="public-routes-list" class="public-routes-list" aria-label="Rutas registradas" hidden>
+            <header class="public-routes-header">
+                <h2>Rutas registradas</h2>
+                <button type="button" id="public-routes-close" class="public-routes-close" aria-label="Cerrar rutas">×</button>
+            </header>
+            <p id="public-routes-status" class="public-routes-status" role="status" aria-live="polite"></p>
+            <ul id="public-routes-items" class="public-routes-items"></ul>
+            <button type="button" id="public-routes-clear" class="public-routes-clear" hidden>Limpiar ruta seleccionada</button>
+        </section>
+    </div>
+
+    <!-- El selector se conserva en escritorio; en móvil el origen se elige desde el popup. -->
     <div class="doors-panel-container">
         <label class="doors-panel-title" for="doors-select">Puertas de Acceso</label>
         <select id="doors-select" class="doors-select">

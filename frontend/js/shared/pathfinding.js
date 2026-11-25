@@ -51,6 +51,7 @@ function projectPointOnSegment(pLat, pLng, uLat, uLng, vLat, vLng) {
     return { dist, t };
 }
 
+
 // ---------- Construir Grafo desde caminitos GeoJSON ----------
 function buildGraph(geojsonPaths, snappingToleranceMeters = 2.5) {
     let graph = {};

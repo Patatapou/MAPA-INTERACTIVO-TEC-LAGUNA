@@ -12,6 +12,7 @@
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
 require_once __DIR__ . '/../services/NetworkService.php';
+require_once __DIR__ . '/../services/RouteSettingsService.php';
 
 requerirAdmin();
 
@@ -53,6 +54,7 @@ if (file_exists($rutaDatos)) {
 
 $revision = is_array($red) ? (int) ($red['revision'] ?? 0) : 0;
 $totalSegmentos = is_array($red) ? count($red['features'] ?? []) : 0;
+$estilosMapa = (new RouteSettingsService())->obtener()['estilos'];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -177,6 +179,7 @@ $totalSegmentos = is_array($red) ? count($red['features'] ?? []) : 0;
     window.RED_CSRF = <?= json_encode($csrfToken, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     window.RED_PAIRS = <?= json_encode($pares, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     window.RED_METADATOS = <?= json_encode($metadatos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    window.RED_ESTILOS_MAPA = <?= json_encode($estilosMapa, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     window.RED_URL_GUARDAR = 'index.php?p=save-red';
     window.RED_URL_ESTADO = 'index.php?p=getRed';
     window.RED_URL_PANEL = 'index.php?p=rutas';

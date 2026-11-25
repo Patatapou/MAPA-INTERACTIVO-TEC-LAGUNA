@@ -31,6 +31,7 @@ try {
         'errores' => $validacion['errores'],
         'config' => [
             'tolerancia_continuidad_m' => (float) ($config['tolerancia_continuidad_m'] ?? 2.5),
+            'distancia_inicio_ruta_m' => (float) ($config['distancia_inicio_ruta_m'] ?? 7.0),
             'max_segmentos_por_ruta' => (int) ($config['max_segmentos_por_ruta'] ?? 500),
             'max_salto_enlace_m' => (float) ($config['max_salto_enlace_m'] ?? 80),
         ],

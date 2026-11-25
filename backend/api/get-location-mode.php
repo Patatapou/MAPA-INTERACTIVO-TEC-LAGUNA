@@ -18,7 +18,9 @@ function responderModoUbicacion(array $payload, int $codigo = 200): void
 try {
     require_once __DIR__ . '/../bootstrap.php';
     require_once BACKEND_PATH . '/auth/auth_middleware.php';
+    require_once BACKEND_PATH . '/services/RouteSettingsService.php';
     requerirAdmin();
+    $servicio = new RouteSettingsService();
 
     $metodo = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
     if ($metodo !== 'GET' && $metodo !== 'POST') {
@@ -29,7 +31,6 @@ try {
         ], 405);
     }
 
-    $rutaConfiguracion = PUBLIC_DATA_PATH . '/location-config.js';
     if ($metodo === 'POST') {
         $token = $_POST['csrf_token'] ?? '';
         if (!is_string($token) || !validarTokenCSRF($token)) {
@@ -39,54 +40,39 @@ try {
             ], 403);
         }
 
-        $modo = $_POST['modo'] ?? '';
-        if (!is_string($modo) || !in_array($modo, ['real', 'simulada'], true)) {
+        $entrada = null;
+        if (isset($_POST['settings_json']) && is_string($_POST['settings_json'])) {
+            $entrada = json_decode($_POST['settings_json'], true);
+        } elseif (isset($_POST['modo']) && is_string($_POST['modo'])) {
+            $entrada = $servicio->obtener();
+            $entrada['modo_ubicacion'] = $_POST['modo'];
+        }
+        if (!is_array($entrada)) {
             responderModoUbicacion([
                 'success' => false,
-                'message' => 'El modo debe ser «real» o «simulada».',
+                'message' => 'La configuración enviada no es válida.',
             ], 400);
         }
 
-        $contenido = "window.MODO_UBICACION = '" . $modo . "';\n";
-        $rutaTemporal = $rutaConfiguracion . '.tmp.' . bin2hex(random_bytes(8));
-        $escrito = file_put_contents($rutaTemporal, $contenido, LOCK_EX);
-        if ($escrito !== strlen($contenido)) {
-            if (is_file($rutaTemporal)) {
-                unlink($rutaTemporal);
-            }
-            responderModoUbicacion([
-                'success' => false,
-                'message' => 'No se pudo guardar el modo de ubicación.',
-            ], 500);
-        }
-        if (!rename($rutaTemporal, $rutaConfiguracion)) {
-            unlink($rutaTemporal);
-            responderModoUbicacion([
-                'success' => false,
-                'message' => 'No se pudo aplicar el modo de ubicación.',
-            ], 500);
-        }
-
-        responderModoUbicacion(['success' => true, 'modo' => $modo]);
-    }
-
-    $contenido = is_file($rutaConfiguracion) ? file_get_contents($rutaConfiguracion) : false;
-    if (
-        $contenido === false
-        || preg_match(
-            '/\Awindow\.MODO_UBICACION\s*=\s*[\'"](real|simulada)[\'"];\s*\z/',
-            trim($contenido),
-            $coincidenciaModo
-        ) !== 1
-    ) {
-        error_log('Modo de ubicación inválido en location-config.js.');
+        $configuracion = $servicio->guardar($entrada);
         responderModoUbicacion([
-            'success' => false,
-            'message' => 'La configuración del modo de ubicación no es válida.',
-        ], 500);
+            'success' => true,
+            'modo' => $configuracion['modo_ubicacion'],
+            'settings' => $configuracion,
+        ]);
     }
 
-    responderModoUbicacion(['success' => true, 'modo' => $coincidenciaModo[1]]);
+    $configuracion = $servicio->obtener();
+    responderModoUbicacion([
+        'success' => true,
+        'modo' => $configuracion['modo_ubicacion'],
+        'settings' => $configuracion,
+    ]);
+} catch (InvalidArgumentException $e) {
+    responderModoUbicacion([
+        'success' => false,
+        'message' => $e->getMessage(),
+    ], 400);
 } catch (Throwable $e) {
     error_log('API de modo de ubicación: ' . $e->getMessage());
     responderModoUbicacion([

@@ -8,7 +8,10 @@
 
 require_once __DIR__ . '/../auth/auth_middleware.php';
 require_once __DIR__ . '/../repositories/BuildingGeometryRepository.php';
+require_once __DIR__ . '/../services/RouteSettingsService.php';
 requerirAdmin();
+
+$estilosMapa = (new RouteSettingsService())->obtener()['estilos'];
 
 $accion = $_GET['accion'] ?? 'nuevo'; // 'nuevo' o 'editar'
 $edificioId = $_GET['id'] ?? '';
@@ -155,6 +158,7 @@ $csrfToken = generarTokenCSRF();
     window.EDITOR_EDIFICIO_ID = <?= json_encode($edificioId, JSON_UNESCAPED_UNICODE) ?>;
     // Todas las geometrías existentes (solo lectura, como referencia visual)
     window.EDITOR_GEOMETRIAS_EXISTENTES = <?= json_encode($geometriasExistentes, JSON_UNESCAPED_UNICODE) ?>;
+    window.EDITOR_ESTILOS_MAPA = <?= json_encode($estilosMapa, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 </script>
 <script src="js/admin/editor.js"></script>
 

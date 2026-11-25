@@ -154,6 +154,7 @@ comprobar('el sitio público no menciona index.php', conPhp.length === 0, conPhp
 // ---------- 6. Datos válidos ----------
 let datos = null;
 let caminitos = null;
+let rutasPublicas = null;
 let geotec = null;
 
 try {
@@ -164,8 +165,25 @@ try {
     });
     comprobar('location-config.js define un modo válido',
         contexto.window.MODO_UBICACION === 'real' || contexto.window.MODO_UBICACION === 'simulada');
+    if (contexto.window.CONFIG_MAPA !== undefined) {
+        comprobar('location-config.js contiene configuración visual saneada',
+            contexto.window.CONFIG_MAPA && contexto.window.CONFIG_MAPA.schema_version === 1
+            && contexto.window.CONFIG_MAPA.estilos && contexto.window.CONFIG_MAPA.rutas);
+    }
 } catch (error) {
     comprobar('location-config.js define un modo válido', false, error.message);
+}
+
+try {
+    rutasPublicas = JSON.parse(leer('data/rutas-publicas.json'));
+    comprobar('rutas-publicas.json tiene el esquema estático esperado',
+        rutasPublicas && rutasPublicas.schema_version === 1 && Array.isArray(rutasPublicas.rutas));
+    const camposPrivados = /(?:creado_por|actualizado_por|password|audit|csrf|session)/i;
+    comprobar('rutas-publicas.json no expone campos privados',
+        !camposPrivados.test(JSON.stringify(rutasPublicas)));
+} catch (error) {
+    comprobar('rutas-publicas.json tiene el esquema estático esperado', false, error.message);
+    comprobar('rutas-publicas.json no expone campos privados', false, error.message);
 }
 
 try {

@@ -22,6 +22,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnDrawPolygon = document.getElementById('btn-draw-polygon');
     const btnEditMode = document.getElementById('btn-edit-mode');
     const btnDeleteMode = document.getElementById('btn-delete-mode');
+    const estilosMapa = window.EDITOR_ESTILOS_MAPA || {};
+    const estiloEdificios = estilosMapa.edificios_admin || {
+        contorno: { color: '#000000', grosor: 1, opacidad: 1 },
+        relleno: { color: '#9aa5b1', opacidad: 0.9 }
+    };
 
     // ==========================================
     // ESTADO DEL EDITOR
@@ -144,12 +149,12 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             style: function () {
                 return {
-                    color: '#4b5563',
-                    weight: 1.5,
-                    opacity: 0.9,
+                    color: estiloEdificios.contorno.color,
+                    weight: estiloEdificios.contorno.grosor,
+                    opacity: estiloEdificios.contorno.opacidad,
                     dashArray: '4 3',
-                    fillColor: '#9ca3af',
-                    fillOpacity: 0.18,
+                    fillColor: estiloEdificios.relleno.color,
+                    fillOpacity: estiloEdificios.relleno.opacidad,
                 };
             },
         });

@@ -23,6 +23,19 @@ html, body, #map {
     box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
 }
 
+.label-acceso {
+    background-color: #1b3a57;
+    border: 1px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    font-weight: bold;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    text-align: center;
+    line-height: 20px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+}
+
 /* Estilo del Popup general */
 .popup-tec {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -295,10 +308,13 @@ html, body, #map {
 /* En móviles, para evitar colisiones con la barra de búsqueda que está en bottom */
 @media (max-width: 768px) {
     .doors-panel-container {
-        bottom: 85px; /* Sube para quedar por encima de la barra */
+        display: none;
+    }
+
+    .searchbar-container {
         left: 5%;
-        width: 90%;
-        box-sizing: border-box;
+        bottom: 20px;
+        transform: none;
     }
 }
 
@@ -362,6 +378,12 @@ html, body, #map {
     transform: translateY(150%);
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    min-width: 220px;
+    min-height: 120px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
+    overflow: auto;
+    box-sizing: border-box;
 }
 
 .navigation-info-panel.active {
@@ -376,6 +398,9 @@ html, body, #map {
     padding-bottom: 6px;
     margin-bottom: 10px;
     color: #ffeb3b;
+    cursor: move;
+    touch-action: none;
+    user-select: none;
 }
 
 .nav-info-details {
@@ -451,6 +476,171 @@ html, body, #map {
         transform: translateY(0);
     }
 }
+
+    .nav-panel-resize {
+        position: absolute;
+        right: 3px;
+        bottom: 3px;
+        width: 22px;
+        height: 22px;
+        cursor: nwse-resize;
+        touch-action: none;
+        user-select: none;
+    }
+
+    .nav-panel-resize::after {
+        content: "";
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        width: 10px;
+        height: 10px;
+        border-right: 2px solid rgba(255,255,255,.75);
+        border-bottom: 2px solid rgba(255,255,255,.75);
+    }
+
+    .public-routes-control {
+        position: fixed;
+        top: 78px;
+        left: 10px;
+        right: auto;
+        z-index: 1200;
+    }
+
+    .public-routes-list {
+        width: min(340px, calc(100vw - 72px));
+        max-height: min(65vh, 520px);
+        margin-top: 8px;
+        overflow: auto;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        box-sizing: border-box;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .public-routes-list[hidden] { display: none; }
+
+    .public-routes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .public-routes-header h2 {
+        margin: 0;
+        color: #1b3a57;
+        font-size: 16px;
+    }
+
+    .public-routes-close {
+        border: 0;
+        background: transparent;
+        color: #1b3a57;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .public-routes-status {
+        min-height: 18px;
+        margin: 8px 0;
+        color: #555;
+        font-size: 12px;
+    }
+
+    .public-routes-items {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .public-route-item {
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+        padding: 9px 10px;
+        border: 1px solid #d5dce5;
+        border-radius: 7px;
+        background: #fff;
+        color: #1b3a57;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .public-route-item:hover,
+    .public-route-item[aria-pressed="true"] {
+        border-color: #1b3a57;
+        background: #eaf1f7;
+    }
+
+    .public-route-item strong,
+    .public-route-item span {
+        display: block;
+    }
+
+    .public-route-item span {
+        margin-top: 3px;
+        color: #555;
+        font-size: 11px;
+    }
+
+    .public-routes-clear {
+        width: 100%;
+        margin-top: 8px;
+        padding: 8px;
+        border: 0;
+        border-radius: 6px;
+        background: #1b3a57;
+        color: #fff;
+        cursor: pointer;
+    }
+
+    .public-routes-clear[hidden] { display: none; }
+
+    .public-route-arrow {
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 18px;
+        font-weight: 700;
+        text-shadow: -1px -1px 2px #111, 1px 1px 2px #111;
+        white-space: nowrap;
+        border: 0;
+        background: transparent;
+    }
+
+    .public-route-arrow span {
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .public-routes-control {
+            top: 78px;
+            left: 10px;
+            right: auto;
+        }
+        
+        .public-routes-list {
+            width: min(340px, calc(100vw - 100px));
+            max-height: min(65vh, 520px);
+        }
+
+        .leaflet-control-attribution {
+            max-width: 78vw;
+            white-space: normal;
+            line-height: 1.25;
+        }
+    }
+
+    @media (min-width: 769px) {
+        .leaflet-control-attribution {
+            max-width: 70vw;
+            white-space: normal;
+        }
+    }
 
 /* ANIMACIÓN PARA LA RUTA */
 @keyframes routeFlow {

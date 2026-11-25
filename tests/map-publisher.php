@@ -110,6 +110,16 @@ try {
     gitPublisher(['push', 'origin', 'main'], $repo);
 
     $publisher = new MapPublisher($repo);
+    $exportarCatalogo = false;
+    $contenidoCatalogo = '{"schema_version":1,"rutas":[]}';
+    $publisherIntegrado = new MapPublisher($repo, static function () use (&$exportarCatalogo, &$contenidoCatalogo, $repo): void {
+        if ($exportarCatalogo) {
+            file_put_contents(
+                $repo . DIRECTORY_SEPARATOR . 'frontend' . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'rutas-publicas.json',
+                $contenidoCatalogo
+            );
+        }
+    });
     file_put_contents($repo . DIRECTORY_SEPARATOR . 'frontend' . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'sample.json', '{"ready":true}');
     $preview = $publisher->vistaPrevia();
     comprobarPublisher(
@@ -183,6 +193,30 @@ try {
     comprobarPublisher(
         $publicado['published'] && $jsonRemoto === '{"ready":false}',
         'confirma y envía solo el mapa estático al remoto main'
+    );
+
+    $exportarCatalogo = true;
+    $previewCatalogo = $publisherIntegrado->vistaPrevia();
+    comprobarPublisher(
+        in_array('frontend/data/rutas-publicas.json', $previewCatalogo['files'], true),
+        'la vista previa incluye el catálogo generado antes del snapshot'
+    );
+    $contenidoCatalogo = '{"schema_version":1,"rutas":[{"id":"ruta-1234abcd"}]}';
+    try {
+        $publisherIntegrado->publicar($previewCatalogo['snapshot']);
+        comprobarPublisher(false, 'rechaza el catálogo cambiado entre vista previa y confirmación');
+    } catch (MapPublisherException $e) {
+        comprobarPublisher($e->httpStatus === 409, 'rechaza el catálogo cambiado entre vista previa y confirmación');
+    }
+    $previewCatalogoFinal = $publisherIntegrado->vistaPrevia();
+    $publicacionCatalogo = $publisherIntegrado->publicar($previewCatalogoFinal['snapshot']);
+    $catalogoRemoto = gitPublisher(
+        ['--git-dir=' . $remoto, 'show', 'main:frontend/data/rutas-publicas.json'],
+        $tempBase
+    );
+    comprobarPublisher(
+        $publicacionCatalogo['published'] && $catalogoRemoto === $contenidoCatalogo,
+        'la confirmación publica el catálogo estático generado en main'
     );
 
     $treeRemoto = gitPublisher(['write-tree'], $repo);

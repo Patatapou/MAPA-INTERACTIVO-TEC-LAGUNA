@@ -15,18 +15,21 @@ final class MapPublisherException extends RuntimeException
 final class MapPublisher
 {
     private string $root;
+    private ?Closure $prepararExportacion;
 
-    public function __construct(?string $rootPath = null)
+    public function __construct(?string $rootPath = null, ?Closure $prepararExportacion = null)
     {
         $root = realpath($rootPath ?? ROOT_PATH);
         if ($root === false || !is_dir($root)) {
             throw new MapPublisherException('No se pudo localizar la raíz del repositorio.', 500);
         }
         $this->root = $root;
+        $this->prepararExportacion = $prepararExportacion;
     }
 
     public function vistaPrevia(): array
     {
+        $this->prepararExportacion();
         $estado = $this->obtenerEstadoSeguro();
         return [
             'files' => $estado['files'],
@@ -41,6 +44,7 @@ final class MapPublisher
             throw new MapPublisherException('La confirmación de publicación no es válida.', 400);
         }
 
+        $this->prepararExportacion();
         $estado = $this->obtenerEstadoSeguro();
         if (!hash_equals($estado['snapshot'], $snapshotEsperado)) {
             throw new MapPublisherException(
@@ -62,6 +66,7 @@ final class MapPublisher
             );
         }
 
+        $this->prepararExportacion();
         $estadoValidado = $this->obtenerEstadoSeguro();
         if (!hash_equals($estadoValidado['snapshot'], $snapshotEsperado)) {
             throw new MapPublisherException(
@@ -122,6 +127,24 @@ final class MapPublisher
             'files' => $archivosPreparados,
             'message' => 'Cambios enviados a main. GitHub Actions iniciará la publicación del mapa.',
         ];
+    }
+
+    private function prepararExportacion(): void
+    {
+        if ($this->prepararExportacion === null) {
+            return;
+        }
+
+        try {
+            ($this->prepararExportacion)();
+        } catch (MapPublisherException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            throw new MapPublisherException(
+                'No se pudo generar la exportación pública: ' . $e->getMessage(),
+                422
+            );
+        }
     }
 
     private function obtenerEstadoSeguro(): array

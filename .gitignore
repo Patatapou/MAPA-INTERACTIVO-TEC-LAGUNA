@@ -30,5 +30,8 @@ Thumbs.db
 # Documentación local de uso (no subir a GitHub)
 uso.md
 
+# Script local para detener el servidor de desarrollo
+/stop-local-server.ps1
+
 /DUMP/
 /docs/

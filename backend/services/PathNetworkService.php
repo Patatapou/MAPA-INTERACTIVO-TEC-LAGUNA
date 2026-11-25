@@ -9,8 +9,8 @@
 //
 // Reglas del plan:
 //  - Identidad de nodo = `lat.toFixed(6) + "," + lng.toFixed(6)` (apartado 9.2).
-//  - Continuidad de cadena: ≤2,5 m (la misma tolerancia de snapping que usa el
-//    grafo público en `js/pathfinding.js`).
+//  - Continuidad de rutas: 1,5 m por defecto, configurable desde el panel.
+//  - Topología general: mantiene la tolerancia de 2,5 m.
 //  - Hidratación: inversión por sentido y sin duplicar el nodo de unión.
 
 require_once __DIR__ . '/../repositories/PathNetworkRepository.php';
@@ -26,6 +26,7 @@ class PathNetworkService
     private ?array $geojsonCache = null;
 
     public const TOLERANCIA_CONTINUIDAD_M = 2.5;
+    public const TOLERANCIA_RUTA_M = 1.5;
 
     public function __construct(?PathNetworkRepository $repo = null)
     {
@@ -167,10 +168,10 @@ class PathNetworkService
     /**
      * Validar una cadena de referencias `{id, sentido}`.
      *
-     * @param array<int, array{id?: mixed, sentido?: mixed}> $cadena
+     * @param array<int, array{id?: mixed, sentido?: mixed, desde?: mixed, hasta?: mixed}> $cadena
      * @return array{ok: bool, errores: array<int, string>, advertencias: array<int, string>, nodos: array<int, string>, distancia_m: float}
      */
-    public function validarCadena(array $cadena, float $tolerancia = self::TOLERANCIA_CONTINUIDAD_M, int $maxSegmentos = 500): array
+    public function validarCadena(array $cadena, float $tolerancia = self::TOLERANCIA_RUTA_M, int $maxSegmentos = 500): array
     {
         $errores = [];
         $advertencias = [];
@@ -219,9 +220,30 @@ class PathNetworkService
                 continue;
             }
 
+            $desde = $ref['desde'] ?? 0;
+            $hasta = $ref['hasta'] ?? 1;
+            if (
+                !is_numeric($desde)
+                || !is_numeric($hasta)
+                || !is_finite((float) $desde)
+                || !is_finite((float) $hasta)
+                || (float) $desde < 0
+                || (float) $hasta > 1
+                || (float) $desde >= (float) $hasta
+            ) {
+                $errores[] = 'Segmento ' . $id . ': el tramo debe cumplir 0 ≤ desde < hasta ≤ 1.';
+                continue;
+            }
+
             $segmento = $indice[$id];
-            $inicio = $sentido === 'normal' ? $segmento['inicio'] : $segmento['fin'];
-            $fin = $sentido === 'normal' ? $segmento['fin'] : $segmento['inicio'];
+            $coords = $sentido === 'inverso' ? array_reverse($segmento['coordenadas']) : $segmento['coordenadas'];
+            $coords = self::recortarPolilinea($coords, (float) $desde, (float) $hasta);
+            if (count($coords) < 2) {
+                $errores[] = 'Segmento ' . $id . ': el tramo seleccionado no tiene longitud.';
+                continue;
+            }
+            $inicio = self::claveNodo((float) $coords[0][1], (float) $coords[0][0]);
+            $fin = self::claveNodo((float) $coords[count($coords) - 1][1], (float) $coords[count($coords) - 1][0]);
 
             if ($extremoActual !== null) {
                 [$aLat, $aLng] = array_map('floatval', explode(',', $extremoActual));
@@ -238,9 +260,7 @@ class PathNetworkService
             }
 
             $extremoActual = $fin;
-            $distancia += $segmento['longitud_m'];
-
-            $coords = $sentido === 'inverso' ? array_reverse($segmento['coordenadas']) : $segmento['coordenadas'];
+            $distancia += self::longitudPolilinea($coords);
             foreach ($coords as $indiceCoord => $punto) {
                 if ($posicion > 0 && $indiceCoord === 0) {
                     continue; // nodo de unión ya registrado
@@ -267,7 +287,7 @@ class PathNetworkService
      * @param array{segmentos?: array, estado?: string, accesible?: bool} $ruta
      * @return array
      */
-    public function hidratar(array $ruta): array
+    public function hidratar(array $ruta, float $toleranciaContinuidad = self::TOLERANCIA_RUTA_M): array
     {
         $indice = $this->indice();
         $referencias = is_array($ruta['segmentos'] ?? null) ? $ruta['segmentos'] : [];
@@ -280,6 +300,7 @@ class PathNetworkService
         $inactivos = [];
         $noAccesibles = [];
         $saltos = [];
+        $geometriaContinua = true;
 
         $extremoEsperado = null;
 
@@ -295,21 +316,32 @@ class PathNetworkService
             }
 
             $segmento = $indice[$id];
+            $desde = (float) ($ref['desde'] ?? 0);
+            $hasta = (float) ($ref['hasta'] ?? 1);
             $coords = $sentido === 'inverso' ? array_reverse($segmento['coordenadas']) : $segmento['coordenadas'];
-            $inicioSegmento = $sentido === 'inverso' ? $segmento['fin'] : $segmento['inicio'];
-            $finSegmento = $sentido === 'inverso' ? $segmento['inicio'] : $segmento['fin'];
+            $coords = self::recortarPolilinea($coords, $desde, $hasta);
+            if (count($coords) < 2) {
+                $faltantes[] = $id;
+                continue;
+            }
+            $inicioSegmento = self::claveNodo((float) $coords[0][1], (float) $coords[0][0]);
+            $finSegmento = self::claveNodo((float) $coords[count($coords) - 1][1], (float) $coords[count($coords) - 1][0]);
 
             if ($extremoEsperado !== null) {
                 [$aLat, $aLng] = array_map('floatval', explode(',', $extremoEsperado));
                 [$bLat, $bLng] = array_map('floatval', explode(',', $inicioSegmento));
                 $salto = self::distanciaMetros($aLat, $aLng, $bLat, $bLng);
-                if ($salto > self::TOLERANCIA_CONTINUIDAD_M) {
+                if ($salto > $toleranciaContinuidad) {
                     $saltos[] = ['segmento' => $id, 'metros' => round($salto, 2)];
+                    $geometriaContinua = false;
                 }
             }
             $extremoEsperado = $finSegmento;
+            $longitudTramo = self::longitudPolilinea($coords);
 
-            if ($coordenadas !== []) {
+            if ($coordenadas !== [] && $geometriaContinua) {
+                $ultimo = $coordenadas[count($coordenadas) - 1];
+                $coords[0] = [(float) $ultimo[0], (float) $ultimo[1]];
                 array_shift($coords);
             }
             foreach ($coords as $punto) {
@@ -324,10 +356,12 @@ class PathNetworkService
                 'estado' => $segmento['estado'],
                 'accesible' => $segmento['accesible'],
                 'sentido' => $sentido,
-                'longitud_m' => round($segmento['longitud_m'], 1),
+                'longitud_m' => round($longitudTramo, 1),
+                'desde' => $desde,
+                'hasta' => $hasta,
             ];
 
-            $distancia += $segmento['longitud_m'];
+            $distancia += $longitudTramo;
 
             if ($segmento['estado'] !== 'activa') {
                 $inactivos[] = $id;
@@ -352,10 +386,10 @@ class PathNetworkService
         }
 
         return [
-            'geometria' => [
+            'geometria' => $geometriaContinua ? [
                 'type' => 'LineString',
                 'coordinates' => $coordenadas,
-            ],
+            ] : null,
             'nodos' => $nodos,
             'distancia_m' => round($distancia, 1),
             'segmentos_detalle' => $detalle,
@@ -406,6 +440,70 @@ class PathNetworkService
             );
         }
         return $total;
+    }
+
+    /**
+     * Extraer el intervalo normalizado de una polilínea según su longitud.
+     *
+     * @param array<int, array{0: float|int, 1: float|int}> $coords [lng, lat]
+     * @return array<int, array{0: float, 1: float}>
+     */
+    public static function recortarPolilinea(array $coords, float $desde, float $hasta): array
+    {
+        if (count($coords) < 2 || $desde < 0 || $hasta > 1 || $desde >= $hasta) {
+            return [];
+        }
+
+        $longitudTotal = self::longitudPolilinea($coords);
+        if ($longitudTotal <= 0) {
+            return [];
+        }
+
+        $distanciaInicio = $longitudTotal * $desde;
+        $distanciaFin = $longitudTotal * $hasta;
+        $salida = [self::puntoEnDistancia($coords, $distanciaInicio)];
+        $recorrida = 0.0;
+
+        for ($i = 1, $cuenta = count($coords); $i < $cuenta; $i++) {
+            $a = $coords[$i - 1];
+            $b = $coords[$i];
+            $recorrida += self::distanciaMetros((float) $a[1], (float) $a[0], (float) $b[1], (float) $b[0]);
+            if ($recorrida > $distanciaInicio && $recorrida < $distanciaFin) {
+                $salida[] = [(float) $b[0], (float) $b[1]];
+            }
+        }
+
+        $salida[] = self::puntoEnDistancia($coords, $distanciaFin);
+        return $salida;
+    }
+
+    /**
+     * Punto interpolado de una polilínea a una distancia desde su inicio.
+     *
+     * @param array<int, array{0: float|int, 1: float|int}> $coords [lng, lat]
+     * @return array{0: float, 1: float}
+     */
+    private static function puntoEnDistancia(array $coords, float $distancia): array
+    {
+        $recorrida = 0.0;
+        for ($i = 1, $cuenta = count($coords); $i < $cuenta; $i++) {
+            $a = $coords[$i - 1];
+            $b = $coords[$i];
+            $longitud = self::distanciaMetros((float) $a[1], (float) $a[0], (float) $b[1], (float) $b[0]);
+            if ($recorrida + $longitud >= $distancia || $i === $cuenta - 1) {
+                $proporcion = $longitud > 0
+                    ? max(0.0, min(1.0, ($distancia - $recorrida) / $longitud))
+                    : 0.0;
+                return [
+                    (float) $a[0] + ((float) $b[0] - (float) $a[0]) * $proporcion,
+                    (float) $a[1] + ((float) $b[1] - (float) $a[1]) * $proporcion,
+                ];
+            }
+            $recorrida += $longitud;
+        }
+
+        $ultimo = $coords[count($coords) - 1];
+        return [(float) $ultimo[0], (float) $ultimo[1]];
     }
 
     /**

@@ -9,7 +9,8 @@
 //
 // El document root es `frontend/`, así que `backend/` y `database/` quedan
 // fuera del alcance del servidor. Este router añade una barrera extra por URI
-// y bloquea respaldos, logs y archivos ocultos.
+// y bloquea respaldos, logs y archivos ocultos. El catálogo público de rutas
+// se sirve en vivo desde el modelo local; GitHub Pages usa el JSON exportado.
 //
 // Este archivo es SOLO para el entorno local. En producción deben usarse
 // reglas del servidor web (Apache/Nginx) o mover los datos fuera del docroot.
@@ -79,6 +80,36 @@ if (preg_match('#(^|/)\.[^/]#', $rutaMin) === 1) {
 // 5) Nombres con sufijo de archivo temporal de escritura atómica.
 if (strpos($rutaMin, '.tmp.') !== false) {
     denegarAcceso();
+}
+
+// En local, el mapa refleja de inmediato las rutas activas del panel. En
+// GitHub Pages esta URL se resuelve al archivo estático publicado.
+if ($rutaMin === '/data/rutas-publicas.json') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    header('X-Content-Type-Options: nosniff');
+
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        http_response_code(405);
+        header('Allow: GET');
+        echo json_encode(['error' => 'Método no permitido.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    try {
+        require_once __DIR__ . '/backend/bootstrap.php';
+        require_once BACKEND_PATH . '/services/PublicMapExporter.php';
+        $catalogo = (new PublicMapExporter())->obtenerCatalogo();
+        echo json_encode(
+            $catalogo,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+        );
+    } catch (Throwable $e) {
+        error_log('router.php: no se pudo cargar el catálogo público de rutas: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'No se pudo cargar el catálogo público de rutas.'], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
 }
 
 // Cualquier otra petición: que la atienda el servidor embebido con normalidad

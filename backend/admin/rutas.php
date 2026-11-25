@@ -10,6 +10,7 @@
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../auth/auth_middleware.php';
+require_once __DIR__ . '/../services/RouteSettingsService.php';
 requerirAdmin();
 
 $csrfToken = generarTokenCSRF();
@@ -44,37 +45,10 @@ if (file_exists($rutaDatos)) {
     }
 }
 
-// Configuración del módulo (tolerancias) expuesta solo como dato de lectura.
-$configRutas = [
-    'tolerancia_continuidad_m' => 2.5,
-    'max_segmentos_por_ruta' => 500,
-    'max_salto_enlace_m' => 80,
-];
-$modoUbicacion = 'simulada';
-$rutaModoUbicacion = PUBLIC_DATA_PATH . '/location-config.js';
-if (file_exists($rutaModoUbicacion)) {
-    $contenidoModoUbicacion = file_get_contents($rutaModoUbicacion);
-    if (
-        $contenidoModoUbicacion !== false
-        && preg_match(
-            '/\Awindow\.MODO_UBICACION\s*=\s*[\'"](real|simulada)[\'"];\s*\z/',
-            trim($contenidoModoUbicacion),
-            $coincidenciaModo
-        ) === 1
-    ) {
-        $modoUbicacion = $coincidenciaModo[1];
-    }
-}
-$rutaSettings = RUNTIME_PATH . '/settings.json';
-if (file_exists($rutaSettings)) {
-    $contenidoSettings = file_get_contents($rutaSettings);
-    $settings = $contenidoSettings !== false ? json_decode($contenidoSettings, true) : null;
-    if (is_array($settings)) {
-        if (is_array($settings['rutas'] ?? null)) {
-            $configRutas = array_merge($configRutas, $settings['rutas']);
-        }
-    }
-}
+$servicioAjustes = new RouteSettingsService();
+$configuracionMapa = $servicioAjustes->obtener();
+$configRutas = $configuracionMapa['rutas'];
+$configuracionPredeterminada = $servicioAjustes->valoresPorDefecto();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -96,21 +70,11 @@ if (file_exists($rutaSettings)) {
         <div>
             <h1>Rutas del campus</h1>
             <p style="margin: 4px 0 0; font-size: 12px; opacity: .85;">
-                Gestiona rutas y el modo de ubicación.
+                Gestiona rutas y preferencias del mapa.
             </p>
         </div>
         <div class="admin-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-            <div class="modo-ubicacion-control">
-                <label for="modo-ubicacion">Ubicación: </label>
-                <select id="modo-ubicacion">
-                    <option value="simulada" <?= $modoUbicacion === 'simulada' ? 'selected' : '' ?>>Simulada (beacons)</option>
-                    <option value="real" <?= $modoUbicacion === 'real' ? 'selected' : '' ?>>Real (GPS)</option>
-                </select>
-                <button type="button" class="btn btn-primary" id="guardar-modo-ubicacion">Guardar</button>
-                <span class="modo-ubicacion-estado" id="modo-ubicacion-estado" role="status" aria-live="polite">
-                    
-                </span>
-            </div>
+            <button type="button" class="btn btn-secondary" id="abrir-ajustes">⚙️ Ajustes</button>
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar'">← Panel</button>
             <button type="button" class="btn btn-secondary" onclick="window.location.href='index.php?p=editar-red'">🗺️ Red de caminos</button>
             <a href="index.php?p=rutas&accion=nueva" class="btn btn-primary">➕ Nueva ruta</a>
@@ -203,6 +167,19 @@ if (file_exists($rutaSettings)) {
 </div>
 
 <!-- Modal de confirmación de borrado -->
+<div class="modal-fondo modal-ajustes" id="modal-ajustes" role="dialog" aria-modal="true" aria-labelledby="modal-ajustes-titulo" hidden>
+    <section class="modal-caja ajustes-contenido">
+        <h2 id="modal-ajustes-titulo">Ajustes del mapa</h2>
+        <div id="ajustes-campos" class="ajustes-campos"></div>
+        <p id="ajustes-estado" class="ajustes-estado" role="status" aria-live="polite"></p>
+        <div class="modal-acciones">
+            <button type="button" class="btn btn-secondary" id="ajustes-restablecer">Restablecer</button>
+            <button type="button" class="btn btn-secondary" id="ajustes-cancelar">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="ajustes-guardar">Guardar</button>
+        </div>
+    </section>
+</div>
+
 <div class="modal-fondo" id="modal-eliminar" role="dialog" aria-modal="true" aria-labelledby="modal-eliminar-titulo">
     <div class="modal-caja">
         <h3 id="modal-eliminar-titulo">Eliminar ruta</h3>
@@ -225,14 +202,15 @@ if (file_exists($rutaSettings)) {
         'idInicial' => $idInicial,
         'datos' => $datosEdificios,
         'config' => $configRutas,
-        'locationMode' => $modoUbicacion,
+        'settings' => $configuracionMapa,
+        'settingsDefaults' => $configuracionPredeterminada,
         'tipos' => ['principal', 'alterna', 'acceso', 'emergencia', 'institucional'],
         'estados' => ['activa', 'inactiva', 'borrador'],
         'urls' => [
             'getRutas' => 'index.php?p=getRutas',
             'deleteRuta' => 'index.php?p=deleteRuta',
             'getRedCaminos' => 'index.php?p=getRedCaminos',
-            'locationMode' => 'index.php?p=get-location-mode',
+            'settings' => 'index.php?p=get-location-mode',
             'editor' => 'index.php?p=rutas&accion=editar&id=',
         ],
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>;

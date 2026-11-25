@@ -14,6 +14,7 @@ try {
     require_once __DIR__ . '/../bootstrap.php';
     require_once BACKEND_PATH . '/auth/auth_middleware.php';
     require_once BACKEND_PATH . '/services/MapPublisher.php';
+    require_once BACKEND_PATH . '/services/PublicMapExporter.php';
 
     requerirAdmin();
 
@@ -32,7 +33,9 @@ try {
     }
 
     $accion = (string) ($_POST['action'] ?? '');
-    $publisher = new MapPublisher();
+    $publisher = new MapPublisher(null, static function (): void {
+        (new PublicMapExporter())->generar();
+    });
     if ($accion === 'preview') {
         publicarMapaResponder(array_merge(['success' => true], $publisher->vistaPrevia()));
     }

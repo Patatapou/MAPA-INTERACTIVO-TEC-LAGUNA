@@ -16,6 +16,7 @@
     var urls = cfg.urls || {};
     var datos = cfg.datos || {};
     var config = cfg.config || {};
+    var estilosMapa = cfg.settings && cfg.settings.estilos ? cfg.settings.estilos : {};
 
     var estado = {
         rutas: [],
@@ -113,9 +114,13 @@
         modalError: document.getElementById('modal-eliminar-error'),
         modalCancelar: document.getElementById('modal-cancelar'),
         modalConfirmar: document.getElementById('modal-confirmar'),
-        modoUbicacion: document.getElementById('modo-ubicacion'),
-        guardarModoUbicacion: document.getElementById('guardar-modo-ubicacion'),
-        estadoModoUbicacion: document.getElementById('modo-ubicacion-estado')
+        abrirAjustes: document.getElementById('abrir-ajustes'),
+        modalAjustes: document.getElementById('modal-ajustes'),
+        camposAjustes: document.getElementById('ajustes-campos'),
+        estadoAjustes: document.getElementById('ajustes-estado'),
+        guardarAjustes: document.getElementById('ajustes-guardar'),
+        cancelarAjustes: document.getElementById('ajustes-cancelar'),
+        restablecerAjustes: document.getElementById('ajustes-restablecer')
     };
 
     // ---------- Mapa ----------
@@ -138,11 +143,11 @@
             smoothFactor: 0,
             style: function () {
                 return {
-                    color: '#000000',
-                    weight: 1,
-                    opacity: 1,
-                    fillColor: '#9aa5b1',
-                    fillOpacity: 0.9
+                    color: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.color : '#000000',
+                    weight: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.grosor : 1,
+                    opacity: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.contorno.opacidad : 1,
+                    fillColor: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.relleno.color : '#9aa5b1',
+                    fillOpacity: estilosMapa.edificios_admin ? estilosMapa.edificios_admin.relleno.opacidad : 0.9
                 };
             }
         }
@@ -187,23 +192,132 @@
         });
     }
 
-    function guardarModoUbicacion() {
-        var modo = dom.modoUbicacion.value;
-        if (modo !== 'real' && modo !== 'simulada') {
-            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado error';
-            dom.estadoModoUbicacion.textContent = 'Selecciona un modo de ubicación válido.';
-            return;
+    var etiquetasAjustes = {
+        modo_ubicacion: 'Modo de ubicación',
+        tolerancia_continuidad_m: 'Tolerancia de continuidad (m)',
+        distancia_inicio_ruta_m: 'Distancia para iniciar sobre ruta (m)',
+        max_segmentos_por_ruta: 'Máximo de segmentos por ruta',
+        max_salto_enlace_m: 'Salto máximo para enlazar (m)',
+        ruta_publica: 'Ruta pública',
+        ruta_admin: 'Ruta administrativa',
+        caminos: 'Red de caminos',
+        caminos_publicos: 'Red de caminos públicos',
+        segmentos: 'Segmentos resaltados',
+        edificios_publicos: 'Edificios públicos',
+        edificios_admin: 'Edificios administrativos',
+        color: 'Color',
+        grosor: 'Grosor',
+        opacidad: 'Opacidad',
+        contorno: 'Contorno',
+        relleno: 'Relleno'
+    };
+
+    function copiar(objeto) {
+        return JSON.parse(JSON.stringify(objeto));
+    }
+
+    function anadirCampoAjuste(contenedor, ruta, valor) {
+        var fila = el('label', 'ajustes-fila');
+        var nombre = ruta.split('.').pop();
+        fila.appendChild(el('span', null, etiquetasAjustes[nombre] || nombre));
+        var entrada;
+        if (ruta === 'modo_ubicacion') {
+            entrada = document.createElement('select');
+            [['simulada', 'Simulada (beacons)'], ['real', 'Real (GPS)']].forEach(function (opcion) {
+                var opt = el('option', null, opcion[1]);
+                opt.value = opcion[0];
+                entrada.appendChild(opt);
+            });
+        } else {
+            entrada = document.createElement('input');
+            entrada.type = nombre === 'color' ? 'color' : 'number';
+            if (nombre === 'color') {
+                entrada.value = /^#[0-9a-f]{6}$/i.test(valor) ? valor : '#000000';
+            } else {
+                entrada.step = nombre === 'max_segmentos_por_ruta' ? '1' : (nombre === 'opacidad' ? '0.05' : '0.1');
+                entrada.min = nombre === 'max_segmentos_por_ruta' ? '1'
+                    : (nombre === 'max_salto_enlace_m' || nombre === 'grosor' || nombre === 'opacidad' ? '0' : '0.1');
+                entrada.max = nombre === 'max_segmentos_por_ruta' ? '5000'
+                    : (nombre === 'grosor' ? '20' : (nombre === 'opacidad' ? '1'
+                        : (nombre === 'max_salto_enlace_m' ? '1000'
+                            : (nombre === 'distancia_inicio_ruta_m' ? '100' : '25'))));
+                entrada.value = String(valor);
+            }
         }
+        entrada.dataset.settingPath = ruta;
+        fila.appendChild(entrada);
+        contenedor.appendChild(fila);
+        if (ruta === 'modo_ubicacion') { entrada.value = valor; }
+    }
 
-        dom.guardarModoUbicacion.disabled = true;
-        dom.estadoModoUbicacion.className = 'modo-ubicacion-estado';
-        dom.estadoModoUbicacion.textContent = 'Guardando…';
+    function anadirGrupoAjuste(contenedor, clave, valor, ruta) {
+        var grupo = el('section', 'ajustes-grupo');
+        grupo.appendChild(el('h3', null, etiquetasAjustes[clave] || clave));
+        Object.keys(valor).forEach(function (propiedad) {
+            var actual = valor[propiedad];
+            var camino = ruta + '.' + propiedad;
+            if (actual && typeof actual === 'object' && !Array.isArray(actual)) {
+                anadirGrupoAjuste(grupo, propiedad, actual, camino);
+            } else {
+                anadirCampoAjuste(grupo, camino, actual);
+            }
+        });
+        contenedor.appendChild(grupo);
+    }
 
+    function mostrarCamposAjustes(settings) {
+        limpiar(dom.camposAjustes);
+        anadirCampoAjuste(dom.camposAjustes, 'modo_ubicacion', settings.modo_ubicacion);
+        anadirGrupoAjuste(dom.camposAjustes, 'Rutas', settings.rutas, 'rutas');
+        anadirGrupoAjuste(dom.camposAjustes, 'Estilos', settings.estilos, 'estilos');
+    }
+
+    function leerCamposAjustes() {
+        var resultado = { modo_ubicacion: '', rutas: {}, estilos: {} };
+        var entradas = dom.camposAjustes.querySelectorAll('[data-setting-path]');
+        for (var i = 0; i < entradas.length; i++) {
+            var entrada = entradas[i];
+            if (!entrada.checkValidity()) {
+                entrada.reportValidity();
+                return null;
+            }
+            var valor = entrada.type === 'number' ? Number(entrada.value) : entrada.value;
+            var partes = entrada.dataset.settingPath.split('.');
+            var destino = resultado;
+            for (var parte = 0; parte < partes.length - 1; parte++) {
+                if (!destino[partes[parte]]) { destino[partes[parte]] = {}; }
+                destino = destino[partes[parte]];
+            }
+            destino[partes[partes.length - 1]] = valor;
+        }
+        return resultado;
+    }
+
+    function cerrarAjustes() {
+        dom.modalAjustes.classList.remove('visible');
+        dom.modalAjustes.setAttribute('hidden', '');
+    }
+
+    function abrirAjustes() {
+        mostrarCamposAjustes(cfg.settings);
+        dom.estadoAjustes.textContent = '';
+        dom.estadoAjustes.className = 'ajustes-estado';
+        dom.modalAjustes.removeAttribute('hidden');
+        dom.modalAjustes.classList.add('visible');
+        dom.guardarAjustes.focus();
+    }
+
+    function guardarAjustes() {
+        var configuracion = leerCamposAjustes();
+        if (!configuracion) { return; }
+        dom.guardarAjustes.disabled = true;
+        dom.estadoAjustes.className = 'ajustes-estado';
+        dom.estadoAjustes.textContent = 'Guardando…';
         var cuerpo = new FormData();
         cuerpo.append('csrf_token', cfg.csrfToken || '');
-        cuerpo.append('modo', modo);
+        cuerpo.append('settings_json', JSON.stringify(configuracion));
 
-        fetch(urls.locationMode, {
+        fetch(urls.settings, {
             method: 'POST',
             body: cuerpo,
             credentials: 'same-origin',
@@ -215,26 +329,46 @@
             }
             return respuesta.text().then(function (texto) {
                 var resultado;
-                try {
-                    resultado = JSON.parse(texto);
-                } catch (error) {
-                    throw new Error('Respuesta inesperada del servidor (HTTP ' + respuesta.status + ').');
-                }
+                try { resultado = JSON.parse(texto); }
+                catch (error) { throw new Error('Respuesta inesperada del servidor (HTTP ' + respuesta.status + ').'); }
                 if (!respuesta.ok || resultado.success !== true) {
                     throw new Error(resultado.message || ('Error HTTP ' + respuesta.status));
                 }
                 return resultado;
             });
         }).then(function (resultado) {
-            cfg.locationMode = resultado.modo;
-            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado success';
-            dom.estadoModoUbicacion.textContent = 'Guardado.';
+            cfg.settings = resultado.settings;
+            cfg.config = resultado.settings.rutas;
+            actualizarEstilosMapa();
+            cerrarAjustes();
         }).catch(function (error) {
-            dom.estadoModoUbicacion.className = 'modo-ubicacion-estado error';
-            dom.estadoModoUbicacion.textContent = 'No se pudo guardar: ' + error.message;
+            dom.estadoAjustes.className = 'ajustes-estado error';
+            dom.estadoAjustes.textContent = 'No se pudo guardar: ' + error.message;
         }).then(function () {
-            dom.guardarModoUbicacion.disabled = false;
+            dom.guardarAjustes.disabled = false;
         });
+    }
+
+    function actualizarEstilosMapa() {
+        if (!cfg.settings || !cfg.settings.estilos) { return; }
+        var estilos = cfg.settings.estilos;
+        estilosMapa = estilos;
+        var edificios = estilos.edificios_admin;
+        capaEdificios.setStyle({
+            color: edificios.contorno.color,
+            weight: edificios.contorno.grosor,
+            opacity: edificios.contorno.opacidad,
+            fillColor: edificios.relleno.color,
+            fillOpacity: edificios.relleno.opacidad
+        });
+        dibujarRed();
+        dibujarRutas();
+    }
+
+    function guardarAjustesPredeterminados() {
+        mostrarCamposAjustes(cfg.settingsDefaults);
+        dom.estadoAjustes.textContent = 'Se guardarán los valores predeterminados al pulsar Guardar.';
+        dom.estadoAjustes.className = 'ajustes-estado';
     }
 
     function cargarTodo() {
@@ -279,10 +413,11 @@
             var puntos = segmento.coordenadas.map(function (punto) {
                 return [Number(punto[1]), Number(punto[0])];
             });
+            var estiloRed = estilosMapa.caminos || { color: '#12306b', grosor: 4, opacidad: 0.85 };
             var capa = L.polyline(puntos, {
-                color: '#12306b',
-                weight: 4,
-                opacity: 0.85,
+                color: estiloRed.color,
+                weight: estiloRed.grosor,
+                opacity: estiloRed.opacidad,
                 interactive: false,
                 smoothFactor: 0
             });
@@ -308,10 +443,11 @@
         estado.rutas.forEach(function (ruta) {
             var puntos = coordenadasRuta(ruta);
             if (puntos.length < 2) { return; }
+            var estiloRuta = estilosMapa.ruta_admin || { color: '#1161ee', grosor: 6, opacidad: 1 };
             var capa = L.polyline(puntos, {
-                color: '#1161ee',
-                weight: 4,
-                opacity: 0.25,
+                color: estiloRuta.color,
+                weight: estiloRuta.grosor,
+                opacity: estiloRuta.opacidad * 0.25,
                 smoothFactor: 0
             });
             capa.on('click', function () { seleccionar(ruta.id); });
@@ -325,14 +461,25 @@
     }
 
     function aplicarSeleccion() {
+        var estiloRuta = estilosMapa.ruta_admin || { color: '#1161ee', grosor: 6, opacidad: 1 };
         estado.capasRuta.forEach(function (capa, id) {
             var elemento = capa.getElement();
             if (id === estado.seleccionada) {
-                capa.setStyle({ color: '#1161ee', weight: 6, opacity: 1, dashArray: '12 8' });
+                capa.setStyle({
+                    color: estiloRuta.color,
+                    weight: estiloRuta.grosor,
+                    opacity: estiloRuta.opacidad,
+                    dashArray: '12 8'
+                });
                 capa.bringToFront();
                 if (elemento) { elemento.classList.add('ruta-animada'); }
             } else {
-                capa.setStyle({ color: '#1161ee', weight: 4, opacity: 0.4, dashArray: null });
+                capa.setStyle({
+                    color: estiloRuta.color,
+                    weight: estiloRuta.grosor,
+                    opacity: estiloRuta.opacidad * 0.25,
+                    dashArray: null
+                });
                 if (elemento) { elemento.classList.remove('ruta-animada'); }
             }
         });
@@ -687,15 +834,23 @@
 
     dom.modalCancelar.addEventListener('click', cerrarModalEliminar);
     dom.modalConfirmar.addEventListener('click', confirmarEliminar);
-    dom.guardarModoUbicacion.addEventListener('click', guardarModoUbicacion);
+    dom.abrirAjustes.addEventListener('click', abrirAjustes);
+    dom.cancelarAjustes.addEventListener('click', cerrarAjustes);
+    dom.guardarAjustes.addEventListener('click', guardarAjustes);
+    dom.restablecerAjustes.addEventListener('click', guardarAjustesPredeterminados);
 
     dom.modal.addEventListener('click', function (evento) {
         if (evento.target === dom.modal) { cerrarModalEliminar(); }
     });
+    dom.modalAjustes.addEventListener('click', function (evento) {
+        if (evento.target === dom.modalAjustes) { cerrarAjustes(); }
+    });
 
     document.addEventListener('keydown', function (evento) {
         if (evento.key === 'Escape') {
-            if (dom.modal.classList.contains('visible')) {
+            if (dom.modalAjustes.classList.contains('visible')) {
+                cerrarAjustes();
+            } else if (dom.modal.classList.contains('visible')) {
                 cerrarModalEliminar();
             } else if (dom.panel.classList.contains('visible')) {
                 cerrarDetalle();

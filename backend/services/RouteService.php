@@ -18,6 +18,7 @@
 require_once __DIR__ . '/../repositories/RouteRepository.php';
 require_once __DIR__ . '/../repositories/AuditLogRepository.php';
 require_once __DIR__ . '/PathNetworkService.php';
+require_once __DIR__ . '/RouteSettingsService.php';
 
 class RouteServiceException extends RuntimeException
 {
@@ -70,7 +71,7 @@ class RouteService
 {
     public const TIPOS = ['principal', 'alterna', 'acceso', 'emergencia', 'institucional'];
     public const ESTADOS = ['activa', 'inactiva', 'borrador'];
-    public const TIPOS_REFERENCIA = ['acceso', 'edificio', 'nodo'];
+    public const TIPOS_REFERENCIA = ['acceso', 'edificio', 'nodo', 'ubicacion_usuario'];
 
     private RouteRepository $repo;
     private PathNetworkService $red;
@@ -294,7 +295,10 @@ class RouteService
         $advertencias = [];
 
         foreach ($documento['rutas'] as $id => $ruta) {
-            $hidratado = $this->red->hidratar($ruta);
+            $hidratado = $this->red->hidratar(
+                $ruta,
+                (float) ($this->config['tolerancia_continuidad_m'] ?? PathNetworkService::TOLERANCIA_RUTA_M)
+            );
             if ($hidratado['inconsistente']) {
                 $inconsistentes[] = (string) $id;
             }
@@ -364,11 +368,15 @@ class RouteService
         $origen = $this->validarReferencia($entrada['origen'] ?? null, 'origen', $errores);
         $destino = $this->validarReferencia($entrada['destino'] ?? null, 'destino', $errores);
 
-        $segmentos = $this->normalizarSegmentos($entrada['segmentos'] ?? null, $errores);
+        $segmentos = $this->normalizarSegmentos(
+            $entrada['segmentos'] ?? [],
+            $errores,
+            $origen['tipo'] === 'ubicacion_usuario'
+        );
 
         if ($segmentos !== []) {
             $max = (int) ($this->config['max_segmentos_por_ruta'] ?? 500);
-            $tolerancia = (float) ($this->config['tolerancia_continuidad_m'] ?? 2.5);
+            $tolerancia = (float) ($this->config['tolerancia_continuidad_m'] ?? PathNetworkService::TOLERANCIA_RUTA_M);
             $validacion = $this->red->validarCadena($segmentos, $tolerancia, $max);
             foreach ($validacion['errores'] as $error) {
                 $errores[] = $error;
@@ -405,14 +413,23 @@ class RouteService
         $tipo = is_string($referencia['tipo'] ?? null) ? $referencia['tipo'] : '';
         $ref = is_string($referencia['ref'] ?? null) ? trim($referencia['ref']) : '';
 
-        if (!in_array($tipo, self::TIPOS_REFERENCIA, true)) {
-            $errores[] = 'Tipo de ' . $campo . ' inválido. Valores permitidos: ' . implode(', ', self::TIPOS_REFERENCIA) . '.';
+        $tiposPermitidos = $campo === 'origen'
+            ? self::TIPOS_REFERENCIA
+            : ['acceso', 'edificio', 'nodo'];
+        if (!in_array($tipo, $tiposPermitidos, true)) {
+            $errores[] = 'Tipo de ' . $campo . ' inválido. Valores permitidos: ' . implode(', ', $tiposPermitidos) . '.';
+        }
+        if ($tipo === 'ubicacion_usuario' && $campo === 'origen') {
+            if ($ref !== '') {
+                $errores[] = 'El origen «ubicación del usuario» no debe incluir una referencia.';
+            }
+            return ['tipo' => $tipo, 'ref' => ''];
         }
         if ($ref === '') {
             $errores[] = 'Falta la referencia de ' . $campo . '.';
         }
 
-        if ($tipo !== '' && $ref !== '' && in_array($tipo, self::TIPOS_REFERENCIA, true)) {
+        if ($tipo !== '' && $ref !== '' && in_array($tipo, $tiposPermitidos, true)) {
             if ($tipo === 'nodo') {
                 $nodos = $this->red->nodos();
                 if (!isset($nodos[$ref])) {
@@ -441,9 +458,9 @@ class RouteService
     }
 
     /**
-     * @return array<int, array{id: string, sentido: string}>
+     * @return array<int, array{id: string, sentido: string, desde?: float, hasta?: float}>
      */
-    private function normalizarSegmentos($segmentos, array &$errores): array
+    private function normalizarSegmentos($segmentos, array &$errores, bool $permitirVacio): array
     {
         if (!is_array($segmentos)) {
             $errores[] = 'La ruta no tiene segmentos.';
@@ -451,7 +468,9 @@ class RouteService
         }
 
         if ($segmentos === []) {
-            $errores[] = 'La ruta no tiene segmentos.';
+            if (!$permitirVacio) {
+                $errores[] = 'La ruta necesita segmentos cuando el origen es un edificio o acceso.';
+            }
             return [];
         }
 
@@ -474,8 +493,27 @@ class RouteService
                 continue;
             }
 
-            // Se ignoran explícitamente los campos extra (solo id y sentido).
-            $limpios[] = ['id' => $id, 'sentido' => $sentido];
+            $desde = $segmento['desde'] ?? 0;
+            $hasta = $segmento['hasta'] ?? 1;
+            if (
+                !is_numeric($desde)
+                || !is_numeric($hasta)
+                || !is_finite((float) $desde)
+                || !is_finite((float) $hasta)
+                || (float) $desde < 0
+                || (float) $hasta > 1
+                || (float) $desde >= (float) $hasta
+            ) {
+                $errores[] = 'Segmento ' . $id . ': el tramo debe cumplir 0 ≤ desde < hasta ≤ 1.';
+                continue;
+            }
+
+            $limpio = ['id' => $id, 'sentido' => $sentido];
+            if ((float) $desde !== 0.0 || (float) $hasta !== 1.0) {
+                $limpio['desde'] = (float) $desde;
+                $limpio['hasta'] = (float) $hasta;
+            }
+            $limpios[] = $limpio;
         }
 
         return $limpios;
@@ -538,7 +576,10 @@ class RouteService
 
     private function presentar(array $ruta, bool $resumen): array
     {
-        $hidratado = $this->red->hidratar($ruta);
+        $hidratado = $this->red->hidratar(
+            $ruta,
+            (float) ($this->config['tolerancia_continuidad_m'] ?? PathNetworkService::TOLERANCIA_RUTA_M)
+        );
         $vinculos = $this->resolverVinculos($ruta);
 
         $salida = [
@@ -555,6 +596,7 @@ class RouteService
             'n_segmentos' => (int) ($hidratado['n_segmentos'] ?? 0),
             'distancia_m' => (float) $hidratado['distancia_m'],
             'inconsistente' => (bool) $hidratado['inconsistente'],
+            'dinamica' => ($ruta['origen']['tipo'] ?? '') === 'ubicacion_usuario' && empty($ruta['segmentos']),
             'advertencias' => $hidratado['advertencias'],
             'creado_en' => (string) ($ruta['creado_en'] ?? ''),
             'actualizado_en' => (string) ($ruta['actualizado_en'] ?? ''),
@@ -585,6 +627,9 @@ class RouteService
             }
             $tipo = (string) ($referencia['tipo'] ?? '');
             $ref = (string) ($referencia['ref'] ?? '');
+            if ($tipo === 'ubicacion_usuario') {
+                return 'Ubicación del usuario';
+            }
             if ($tipo === 'nodo') {
                 return 'Nodo ' . $ref;
             }
@@ -637,7 +682,8 @@ class RouteService
     private function configPorDefecto(): array
     {
         return [
-            'tolerancia_continuidad_m' => 2.5,
+            'tolerancia_continuidad_m' => PathNetworkService::TOLERANCIA_RUTA_M,
+            'distancia_inicio_ruta_m' => 7.0,
             'max_segmentos_por_ruta' => 500,
             'max_salto_enlace_m' => 80,
             'permitir_rutas_sin_edificio' => true,
@@ -646,15 +692,6 @@ class RouteService
 
     private function configDesdeSettings(): array
     {
-        $ruta = RUNTIME_PATH . '/settings.json';
-        if (!file_exists($ruta)) {
-            return [];
-        }
-        $contenido = file_get_contents($ruta);
-        $datos = $contenido !== false ? json_decode($contenido, true) : null;
-        if (!is_array($datos) || !is_array($datos['rutas'] ?? null)) {
-            return [];
-        }
-        return $datos['rutas'];
+        return (new RouteSettingsService())->obtener()['rutas'];
     }
 }

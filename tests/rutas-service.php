@@ -363,7 +363,70 @@ try {
     afirmar('7. Hidratar: sin excepciones', false, $e->getMessage());
 }
 
-// ---------- Caso 8: auditoría ----------
+// ---------- Caso 8: tramos parciales y origen dinámico ----------
+$ctx9 = nuevoServicio('svc-tramo-parcial', $rutaDatos);
+try {
+    $servicio = $ctx9['servicio'];
+    $creada = $servicio->guardar(
+        entradaValida(
+            'Ruta parcial',
+            [['id' => $segmentoA['id'], 'sentido' => 'normal', 'desde' => 0.2, 'hasta' => 0.8]],
+            $refEdificio,
+            $refAcceso
+        ),
+        ['id' => 'test_001', 'username' => 'pruebas']
+    );
+    $detalle = $servicio->obtener($creada['id']);
+    afirmar(
+        '8. Tramo parcial: la geometría se recorta y conserva al menos dos puntos',
+        is_array($detalle['geometria'])
+            && count($detalle['geometria']['coordinates']) >= 2
+            && $detalle['distancia_m'] < $segmentoA['longitud_m']
+    );
+    afirmarIgual('8. Tramo parcial: el intervalo se conserva al leer', 0.2, (float) $detalle['segmentos'][0]['desde']);
+} catch (Throwable $e) {
+    afirmar('8. Tramo parcial: sin excepciones', false, $e->getMessage());
+}
+
+$ctx10 = nuevoServicio('svc-origen-dinamico', $rutaDatos);
+try {
+    $entrada = entradaValida('Ruta dinámica', [], $refEdificio, $refAcceso);
+    $entrada['origen'] = ['tipo' => 'ubicacion_usuario', 'ref' => ''];
+    $creada = $ctx10['servicio']->guardar($entrada, ['id' => 'test_001', 'username' => 'pruebas']);
+    afirmar(
+        '8. Origen dinámico: se permite guardar sin segmentos',
+        $creada['dinamica'] === true && $creada['n_segmentos'] === 0
+    );
+} catch (Throwable $e) {
+    afirmar('8. Origen dinámico: sin excepciones', false, $e->getMessage());
+}
+
+try {
+    $segmentoSeparado = segmentoLejano(
+        $indice,
+        [$segmentoA['id'] => true, $segmentoB['id'] => true],
+        $segmentoA['fin']
+    );
+    if ($segmentoSeparado === null) {
+        throw new RuntimeException('No se encontró un segmento suficientemente separado para la prueba.');
+    }
+    $hidratado = $red->hidratar([
+        'estado' => 'borrador',
+        'accesible' => true,
+        'segmentos' => [
+            ['id' => $segmentoA['id'], 'sentido' => 'normal'],
+            ['id' => $segmentoSeparado['id'], 'sentido' => 'normal'],
+        ],
+    ], 1.5);
+    afirmar(
+        '8. Continuidad inválida: no se presenta una geometría conectada',
+        $hidratado['geometria'] === null && $hidratado['saltos'] !== []
+    );
+} catch (Throwable $e) {
+    afirmar('8. Continuidad inválida: sin excepciones', false, $e->getMessage());
+}
+
+// ---------- Caso 9: auditoría ----------
 $ctx8 = nuevoServicio('svc-auditoria', $rutaDatos);
 try {
     $servicio = $ctx8['servicio'];
@@ -374,7 +437,7 @@ try {
     $servicio->eliminar($creada['id'], ['id' => 'test_001', 'username' => 'pruebas']);
 
     $archivoAudit = $ctx8['dirAudit'] . '/audit-log.jsonl';
-    afirmar('8. Auditoría: se crea el registro', file_exists($archivoAudit));
+    afirmar('9. Auditoría: se crea el registro', file_exists($archivoAudit));
 
     $eventos = [];
     foreach (file($archivoAudit, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $linea) {
@@ -387,15 +450,15 @@ try {
     $creados = array_values(array_filter($eventos, static fn(array $e): bool => ($e['event'] ?? '') === 'ruta_creada'));
     $eliminados = array_values(array_filter($eventos, static fn(array $e): bool => ($e['event'] ?? '') === 'ruta_eliminada'));
 
-    afirmarIgual('8. Auditoría: evento ruta_creada', 1, count($creados));
-    afirmarIgual('8. Auditoría: evento ruta_eliminada', 1, count($eliminados));
+    afirmarIgual('9. Auditoría: evento ruta_creada', 1, count($creados));
+    afirmarIgual('9. Auditoría: evento ruta_eliminada', 1, count($eliminados));
     afirmarIgual(
-        '8. Auditoría: el evento apunta a la ruta',
+        '9. Auditoría: el evento apunta a la ruta',
         $creada['id'],
         $creados[0]['ruta_id'] ?? null
     );
     afirmarIgual(
-        '8. Auditoría: se registra el usuario',
+        '9. Auditoría: se registra el usuario',
         'test_001',
         $creados[0]['user_id'] ?? null
     );
@@ -404,7 +467,7 @@ try {
 }
 
 // ---------- Limpieza ----------
-foreach ([$ctx1, $ctx2, $ctx3, $ctx4, $ctx5, $ctx6, $ctx7, $ctx8] as $ctx) {
+foreach ([$ctx1, $ctx2, $ctx3, $ctx4, $ctx5, $ctx6, $ctx7, $ctx8, $ctx9, $ctx10] as $ctx) {
     borrarDir($ctx['dir']);
     borrarDir($ctx['dirAudit']);
 }

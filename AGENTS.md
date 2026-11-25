@@ -87,7 +87,7 @@ Para abrir el login directamente y crear un acceso directo en el escritorio: `.\
 | `?p=getRedCaminos` | `backend/api/get-red-caminos.php` | sí |
 | `?p=getRed` | `backend/api/get-red.php` | sí |
 | `?p=save-red` | `backend/api/save-red.php` | sí + CSRF |
-| `?p=get-location-mode` | `backend/api/get-location-mode.php` | sí (GET); POST sí + CSRF |
+| `?p=get-location-mode` | `backend/api/get-location-mode.php` | sí (GET); POST sí + CSRF (modo, tolerancias y estilos) |
 | `?p=publish-map` | `backend/api/publish-map.php` | sí + CSRF + solo localhost |
 
 `frontend/index.php` es el único PHP accesible desde el navegador (front controller delgado).
@@ -97,11 +97,12 @@ Para abrir el login directamente y crear un acceso directo en el escritorio: `.\
 - Leaflet 1.9.4 vendorizado en `frontend/js/vendor/leaflet/` y `frontend/css/vendor/leaflet/` (sin CDN ni conexión). Teselas locales: `tiles/satelital/{z}/{x}/{y}.jpg`, zoom 15–19.
 - Leaflet-Geoman vendorizado en `frontend/js/vendor/leaflet-geoman/` y `frontend/css/vendor/leaflet-geoman/` (sin CDN).
 - Orden de scripts (importante): `data/GeoTec.js` (define `datosTec`) → `js/shared/dom-seguro.js` → `js/shared/geo-utils.js` → `js/public/beacons-simulation.js` → `js/shared/pathfinding.js` → `js/public/config.js` → `js/public/main.js`.
-- `js/public/main.js` carga `data/location-config.js`: el administrador configura el modo en la parte superior de `?p=rutas`. `simulada` activa beacons; `real` usa GPS del navegador (requiere HTTPS/localhost). El cambio se aplica al recargar el mapa público.
-- Consume `fetch('data/datos.json')` y `fetch('data/caminitos.geojson')`. Si falta `datosTec` o falla un `fetch`, el mapa sigue funcionando y muestra un aviso no bloqueante.
+- `js/public/main.js` carga `data/location-config.js`: publica el modo (`simulada`/`real`) y la configuración visual saneada. El administrador gestiona modo, tolerancias, límites y estilos desde el popup «Ajustes» de `?p=rutas`. `simulada` activa beacons; `real` usa GPS del navegador (requiere HTTPS/localhost).
+- Consume `data/datos.json`, `data/caminitos.geojson` y el catálogo `data/rutas-publicas.json`. En el servidor local, `router.php` resuelve esa URL desde las rutas activas actuales; GitHub Pages sirve el archivo estático exportado. Si el catálogo no está disponible, el selector «RUTAS» muestra un aviso no bloqueante y Dijkstra sigue disponible.
 - `js/shared/dom-seguro.js` expone `escaparHtml`, `escaparRegex` y `normalizarRutaImagen` (también como módulo CommonJS para las pruebas Node). Los popups, tooltips, panel de navegación y buscador construyen nodos de texto; no insertan datos del panel como HTML.
 - `index.html` declara una CSP por `<meta>` (`script-src 'self'`, `connect-src 'self'`, `form-action 'none'`, etc.) y no usa manejadores `on*` ni atributos `style=` inline.
-- Cada edificio muestra un círculo blanco con su ID y tooltip con el nombre. Las geometrías usan `smoothFactor: 0` (mapa, editor y capa de referencia); con el valor por defecto las huellas con muchos vértices se veían como cuadrados.
+- Cada edificio muestra un círculo blanco con su ID; los accesos P1–P6 usan una clase azul independiente. Las geometrías usan `smoothFactor: 0` (mapa, editor y capa de referencia); con el valor por defecto las huellas con muchos vértices se veían como cuadrados.
+- El panel de indicaciones se arrastra desde su cabecera y se redimensiona desde la esquina inferior derecha con Pointer Events; el selector de puertas permanece en escritorio y se oculta en móvil.
 
 ### Botón «Sugerir cambios»
 
@@ -126,9 +127,10 @@ Para abrir el login directamente y crear un acceso directo en el escritorio: `.\
 - `datos.json` — metadatos: `nombre`, `descripcion`, `aulas`, `carpeta`, `tipo`, `imagenes`. Clave = ID del edificio. `tipo` es `edificio` (por defecto) o `acceso`.
 - `GeoTec.js` — geometrías: variable global `datosTec` (FeatureCollection); `properties.id` coincide con la clave de `datos.json`.
 - `caminitos.geojson` — red de caminos (formato v2, ver «Editor de la red»).
-- `location-config.js` — variable `window.MODO_UBICACION` (`simulada` o `real`), actualizada desde la parte superior de la sección de rutas del panel.
+- `location-config.js` — variables `window.MODO_UBICACION` y `window.CONFIG_MAPA`, escritas por `RouteSettingsService` y saneadas para el cliente.
+- `rutas-publicas.json` — catálogo filtrado de rutas activas; escrito antes de la vista previa y la confirmación de publicación por `PublicMapExporter`.
 
-PHP escribe estos archivos desde el panel; el navegador los lee. `location-config.js` solo contiene el modo público, sin secretos. `img/<id>/` contiene las imágenes de carrusel.
+PHP escribe los archivos generados desde el panel/publicador; el navegador los lee. No incluyen usuarios, auditoría ni metadatos de autoría. `img/<id>/` contiene las imágenes de carrusel.
 Los respaldos de `GeoTec.js` y `caminitos.geojson` se escriben en `database/backups/`, nunca junto a los archivos servidos desde `frontend/`.
 
 ### Privados (`database/`)
@@ -222,7 +224,7 @@ Recorridos administrativos; **no** alteran el cálculo del mapa público.
       "accesible": true,
       "origen": { "tipo": "edificio", "ref": "5" },
       "destino": { "tipo": "acceso", "ref": "P1" },
-      "segmentos": [{ "id": "seg-d52f1975", "sentido": "normal" }],
+      "segmentos": [{ "id": "seg-d52f1975", "sentido": "normal", "desde": 0.25, "hasta": 1 }],
       "creado_en": "...",
       "actualizado_en": "...",
       "creado_por": "admin_001",
@@ -233,16 +235,19 @@ Recorridos administrativos; **no** alteran el cálculo del mapa público.
 ```
 
 - `tipo`: `principal | alterna | acceso | emergencia | institucional`; `estado`: `activa | inactiva | borrador`.
-- `segmentos`: solo `{id, sentido}` (`normal | inverso`); geometría y distancia las calcula **siempre** el servidor.
-- `origen`/`destino`: `{tipo, ref}` con `tipo` en `acceso | edificio | nodo`, validado contra `datos.json`.
+- `segmentos`: `{id, sentido, desde?, hasta?}` (`normal | inverso`); los límites parciales son fracciones de longitud en el sentido elegido, entre 0 y 1. Geometría y distancia las calcula **siempre** el servidor.
+- `origen`: `{tipo, ref}` con `tipo` en `acceso | edificio | nodo | ubicacion_usuario`. El último no requiere segmentos; si los incluye, representan el recorrido guardado que puede recortarse desde la ubicación actual. `destino` admite `acceso | edificio | nodo`, validado contra los datos del campus o la red.
 
-Reglas: nombre único (sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control; cadena contigua con tolerancia de 2,5 m (`PathNetworkService::TOLERANCIA_CONTINUIDAD_M`), máximo 500 segmentos, sin IDs duplicados ni inexistentes; al actualizar se exige `updated_at` vigente (si no, **409**); toda alta/edición/borrado se audita (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
+Reglas: nombre único (sin distinguir mayúsculas), 3–80 caracteres, sin caracteres de control; cadena contigua con tolerancia configurable (por defecto 1,5 m), máximo 500 segmentos, sin IDs duplicados ni inexistentes; las referencias parciales permiten unir una cadena al interior de un segmento y conservar un recorrido lineal. Si falla la continuidad, no se presenta una geometría continua válida. Al actualizar se exige `updated_at` vigente (si no, **409**); toda alta/edición/borrado se audita (`ruta_creada`, `ruta_actualizada`, `ruta_eliminada`).
+
+`RouteSettingsService` guarda modo, límites y estilos en `database/runtime/settings.json`; la red administrativa (`caminos`) y la pública (`caminos_publicos`) tienen estilos independientes. `PublicMapExporter::obtenerCatalogo()` construye la lista blanca en memoria (solo rutas activas, sin datos de auditoría/autores); el router local la sirve en vivo y `generar()` la escribe en `frontend/data/rutas-publicas.json` para publicar. También exporta `window.CONFIG_MAPA` en `location-config.js`. `MapPublisher` genera ambas exportaciones antes de cada vista previa y confirmación; un cambio entre la vista previa y la confirmación causa **409** y exige revisar la vista previa de nuevo. GitHub Pages consume únicamente esos archivos estáticos; nunca accede a PHP ni a `runtime/rutas.json`.
 
 ### Interacción del editor de rutas
 
 - Clic en la red: elige el segmento más cercano al cursor en 12 px (independiente del zoom) y cambia el cursor a puntero (`#map-ruta.mapa-sobre-segmento`).
+- La cadena puede conectarse a un punto interior de un segmento con tolerancia configurable (por defecto 1,5 m); guarda límites parciales `desde`/`hasta`. Si un segmento enlaza con una sección anterior, el cliente recorta la cadena para conservar un recorrido lineal.
 - Si el segmento no es contiguo, se busca uno contiguo a ≤14 px antes de rechazar; el mensaje indica la separación real al extremo más cercano.
-- Estilos: base azul marino `#12306b` (peso 5, contorno `#f8fafc` peso 9), contiguos `#0b57d0` (6/10), no contiguos `#7d8ba3` (4, opacidad 0,35), cadena en ámbar `#f59e0b` (peso 8, no interactiva).
+- Estilos base y resaltados toman los valores de `settings.json`; los estados de interacción (no contiguo/cadena) conservan sus colores distintivos.
 - `cargarRed()` se resuelve **antes** de `cargarRutaExistente()` (secuencial).
 - La tarjeta completa abre el detalle; cada tarjeta conserva «Editar» y «Eliminar».
 - Navegación con botones: «🚶 Rutas» en el panel y «← Panel» en el módulo.

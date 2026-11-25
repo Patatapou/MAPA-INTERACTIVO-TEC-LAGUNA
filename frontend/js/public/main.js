@@ -6,15 +6,16 @@ var USE_GPS_LOCATION = false; // El modo se carga desde la configuración del pa
 // ==========================================
 // VARIABLES GLOBALES
 // ==========================================
+//cargar  mapa y ubicación inicial
 var map = L.map('map', { attributionControl: false }).setView([25.5324, -103.436], 17);
 L.control.attribution({ prefix: false }).addTo(map);
 
-// Capa satelital local
+// Capa satelital local (teselas)
 var tilesource_layer = L.tileLayer('tiles/satelital/{z}/{x}/{y}.jpg', {
     minZoom: 15,
     maxZoom: 19,
     tms: false,
-    attribution: 'Imagenes extraidas de Google Maps. Mapa disenado por Juan Pablo e informacion de los edificios recolectada por Angel Daniel'
+    attribution: 'Imágenes extraídas de Google Maps. Mapa diseñado por Juan Pablo Chávez Ramírez e información de los edificios recolectada por Ángel Daniel Salinas Ortiz. maik. Sistema de caminos y rutas.'
 }).addTo(map);
 
 // Datos y capas del campus
@@ -40,10 +41,27 @@ var simulador = null;
 var selectedDoorId = null;
 var selectedDestinationId = null;
 var activeRouteLine = null;
+var publicRouteLine = null;
+var publicRouteArrows = null;
+var selectedPublicRoute = null;
+var publicRoutes = [];
 var startPointMarker = null;
 var endPointMarker = null;
 var rutaFinalizada = false;
 const RADIO_LLEGADA_METROS = 10;
+
+var CONFIGURACION_PUBLICA_DEFECTO = {
+    rutas: { distancia_inicio_ruta_m: 7 },
+    estilos: {
+        ruta_publica: { color: '#1565c0', grosor: 6, opacidad: 0.85 },
+        caminos: { color: '#12306b', grosor: 4, opacidad: 0.85 },
+        caminos_publicos: { color: '#12306b', grosor: 4, opacidad: 0 },
+        edificios_publicos: {
+            contorno: { color: '#2F29D1', grosor: 0, opacidad: 1 },
+            relleno: { color: '#3388FF', opacidad: 0 }
+        }
+    }
+};
 
 // Beacons en el campus (se cargan al inicializar si estamos en simulación o como referencia)
 const beaconsData = [
@@ -108,6 +126,37 @@ function mostrarAviso(mensaje) {
     aviso.textContent = mensaje;
 }
 
+function obtenerConfiguracionPublica() {
+    var config = window.CONFIG_MAPA || {};
+    var estilos = Object.assign({}, CONFIGURACION_PUBLICA_DEFECTO.estilos, config.estilos || {});
+    if (!config.estilos || !config.estilos.caminos_publicos) {
+        estilos.caminos_publicos = config.estilos && config.estilos.caminos
+            ? config.estilos.caminos
+            : CONFIGURACION_PUBLICA_DEFECTO.estilos.caminos_publicos;
+    }
+    return {
+        rutas: Object.assign({}, CONFIGURACION_PUBLICA_DEFECTO.rutas, config.rutas || {}),
+        estilos: estilos
+    };
+}
+
+function aplicarEstiloEdificiosPublicos() {
+    var estilo = obtenerConfiguracionPublica().estilos.edificios_publicos;
+    if (!capasEdificios || !estilo) return;
+    Object.keys(capasEdificios).forEach(function (id) {
+        var capa = capasEdificios[id];
+        if (capa && typeof capa.setStyle === 'function') {
+            capa.setStyle({
+                color: estilo.contorno.color,
+                weight: estilo.contorno.grosor,
+                opacity: estilo.contorno.opacidad,
+                fillColor: estilo.relleno.color,
+                fillOpacity: estilo.relleno.opacidad
+            });
+        }
+    });
+}
+
 // ==========================================
 // CARGA DE DATOS & GEOMETRÍA
 // ==========================================
@@ -146,11 +195,13 @@ function renderizarEdificios() {
         // por defecto) y las huellas irregulares se veían como rectángulos.
         smoothFactor: 0,
         style: function (feature) {
+            var estilos = obtenerConfiguracionPublica().estilos.edificios_publicos;
             return {
-                color: '#2F29D1',
-                weight: 0,
-                fillColor: '#3388FF',
-                fillOpacity: 0
+                color: estilos.contorno.color,
+                weight: estilos.contorno.grosor,
+                opacity: estilos.contorno.opacidad,
+                fillColor: estilos.relleno.color,
+                fillOpacity: estilos.relleno.opacidad
             };
         },
         onEachFeature: function (feature, layer) {
@@ -170,8 +221,9 @@ function renderizarEdificios() {
 
             if (propiedades.id) {
                 var centro = layer.getBounds().getCenter();
+                var esAcceso = /^P[1-6]$/.test(String(propiedades.id));
                 var iconoID = L.divIcon({
-                    className: 'label-edificio',
+                    className: esAcceso ? 'label-acceso' : 'label-edificio',
                     html: escaparHtml(propiedades.id),
                     iconSize: [24, 24],
                     iconAnchor: [12, 12]
@@ -198,12 +250,12 @@ fetch('data/caminitos.geojson')
         return respuesta.json();
     })
     .then(function (data) {
-        // Dibujar caminos sutiles en negro (transparente para no interferir con la visualización de edificios)
+        var estiloCaminos = obtenerConfiguracionPublica().estilos.caminos_publicos;
         L.geoJSON(data, {
             style: {
-                color: '#0000ffff',
-                weight: 4,
-                opacity: 0,
+                color: estiloCaminos.color,
+                weight: estiloCaminos.grosor,
+                opacity: estiloCaminos.opacidad,
                 lineCap: 'round'
             }
         }).addTo(map);
@@ -211,6 +263,9 @@ fetch('data/caminitos.geojson')
         // Construir grafo en pathfinding.js
         pathGraph = buildGraph(data);
         console.log("Grafo para Dijkstra construido con éxito.");
+        if (selectedPublicRoute) {
+            actualizarRutaPublica(selectedPublicRoute, obtenerPosicionUsuario(), false);
+        }
     })
     .catch(function (error) {
         console.error("Error cargando caminitos.geojson:", error);
@@ -254,7 +309,9 @@ function inicializarLocalizacion() {
             actualizarEstadoLlegada(pos);
 
             // Si hay una ruta activa calculada desde la ubicación del usuario, actualizarla en tiempo real
-            if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
+            if (selectedPublicRoute && !rutaFinalizada) {
+                actualizarRutaPublica(selectedPublicRoute, pos, false);
+            } else if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
                 calcularRuta(pos, selectedDestinationId, "Mi ubicación (Simulada)");
             }
         };
@@ -275,6 +332,7 @@ function cargarModoUbicacion() {
                 reject(new Error('El modo de ubicación no es válido.'));
                 return;
             }
+            aplicarEstiloEdificiosPublicos();
             resolve(modo);
         };
         script.onerror = function () {
@@ -361,7 +419,9 @@ function startGeolocation() {
             }
 
             // Si hay ruta activa y no hay puerta seleccionada, recalculamos desde la nueva posición real
-            if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
+            if (selectedPublicRoute && !rutaFinalizada) {
+                actualizarRutaPublica(selectedPublicRoute, { lat: avgLat, lng: avgLng }, false);
+            } else if (selectedDestinationId && !selectedDoorId && !rutaFinalizada) {
                 calcularRuta({ lat: avgLat, lng: avgLng }, selectedDestinationId, "Mi ubicación (GPS)");
             }
         },
@@ -430,12 +490,17 @@ function obtenerPosicionUsuario() {
 }
 
 function actualizarEstadoLlegada(posicion) {
-    if (!activeRouteLine || !selectedDestinationId || rutaFinalizada || !posicion) return;
-
-    var destino = capasEdificios[selectedDestinationId];
-    if (!destino) return;
-
-    var centroDestino = destino.getBounds().getCenter();
+    if ((!activeRouteLine && !publicRouteLine) || rutaFinalizada || !posicion) return;
+    var centroDestino;
+    if (selectedPublicRoute) {
+        centroDestino = destinoRutaPublica(selectedPublicRoute);
+    } else {
+        if (!selectedDestinationId) return;
+        var destino = capasEdificios[selectedDestinationId];
+        if (!destino) return;
+        centroDestino = destino.getBounds().getCenter();
+    }
+    if (!centroDestino) return;
     var distanciaAlDestino = distanciaMetros(
         posicion.lat,
         posicion.lng,
@@ -462,6 +527,7 @@ function finalizarRecorrido() {
         map.removeLayer(endPointMarker);
         endPointMarker = null;
     }
+    limpiarSeleccionRutaPublica();
 
     var panel = document.getElementById('navigation-info-panel');
     if (!panel) return;
@@ -603,6 +669,7 @@ function crearPopupSinDatos(id) {
     return contenedor;
 }
 
+// mostrar la informacion del edificio seleccionado
 function mostrarPopupEdificio(id, layer) {
     if (["P1", "P2", "P3", "P4", "P5", "P6"].includes(id)) {
         layer.bindPopup(crearPopupPuerta(id)).openPopup();
@@ -640,6 +707,8 @@ document.addEventListener('click', function (evento) {
         window.iniciarRuta(id);
     } else if (accion === 'limpiar-ruta') {
         window.limpiarRuta();
+    } else if (accion === 'seleccionar-ruta-publica' && id) {
+        seleccionarRutaPublica(id);
     }
 });
 
@@ -649,6 +718,7 @@ document.addEventListener('click', function (evento) {
 
 // Función puente llamada desde el Popup "Cómo llegar"
 window.iniciarRuta = function (destId) {
+    limpiarSeleccionRutaPublica();
     selectedDestinationId = destId;
 
     let origCoors = null;
@@ -680,7 +750,7 @@ window.iniciarRuta = function (destId) {
 
     // 3. CAPTURA DE ERROR: Si la ubicación no es accesible, lanzar alerta y sugerir puerta
     if (!origCoors) {
-        alert("No pudimos obtener tu ubicación actual.\n\nPor favor, selecciona una puerta de acceso (Puertas P1 a P6) en el menú de la esquina inferior izquierda como punto de partida.");
+        alert("No pudimos obtener tu ubicación actual.\n\nSelecciona un punto de acceso desde el popup de una puerta.");
 
         // Enfocar / parpadear visualmente el dropdown de puertas para guiar al usuario
         let selectEl = document.getElementById('doors-select');
@@ -698,6 +768,8 @@ window.iniciarRuta = function (destId) {
     calcularRuta(origCoors, destId, origName);
 };
 
+
+// trazar y calcular la ruta de inicio a fin
 function calcularRuta(origCoors, destId, origName) {
     if (!pathGraph) {
         alert("Los caminos aún se están cargando. Espera un momento.");
@@ -771,6 +843,323 @@ function calcularRuta(origCoors, destId, origName) {
     map.closePopup();
 }
 
+function cargarCatalogoRutasPublicas() {
+    fetch('data/rutas-publicas.json', { cache: 'no-store' })
+        .then(function (respuesta) {
+            if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+            return respuesta.json();
+        })
+        .then(function (catalogo) {
+            if (!catalogo || catalogo.schema_version !== 1 || !Array.isArray(catalogo.rutas)) {
+                throw new Error('Formato del catálogo no válido.');
+            }
+            publicRoutes = catalogo.rutas.filter(function (ruta) {
+                return ruta && typeof ruta.id === 'string' && typeof ruta.nombre === 'string';
+            });
+            renderizarSelectorRutasPublicas();
+        })
+        .catch(function (error) {
+            console.warn('No se pudo cargar el catálogo de rutas públicas:', error);
+            var estadoRutas = document.getElementById('public-routes-status');
+            if (estadoRutas) estadoRutas.textContent = 'Las rutas registradas no están disponibles en esta publicación.';
+        });
+}
+
+function renderizarSelectorRutasPublicas() {
+    var lista = document.getElementById('public-routes-items');
+    var estadoRutas = document.getElementById('public-routes-status');
+    if (!lista || !estadoRutas) return;
+    while (lista.firstChild) lista.removeChild(lista.firstChild);
+    if (publicRoutes.length === 0) {
+        estadoRutas.textContent = 'No hay rutas activas disponibles.';
+        return;
+    }
+    estadoRutas.textContent = '';
+    publicRoutes.forEach(function (ruta) {
+        var item = document.createElement('li');
+        var boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'public-route-item';
+        boton.setAttribute('data-accion', 'seleccionar-ruta-publica');
+        boton.setAttribute('data-id', ruta.id);
+        boton.setAttribute('aria-pressed', 'false');
+        var nombre = document.createElement('strong');
+        nombre.textContent = ruta.nombre;
+        var resumen = document.createElement('span');
+        var distancia = Number(ruta.distancia_m);
+        resumen.textContent = (ruta.destino && ruta.destino.nombre ? 'Destino: ' + ruta.destino.nombre : 'Ruta del campus')
+            + (Number.isFinite(distancia) ? ' · ' + (distancia >= 1000 ? (distancia / 1000).toFixed(2) + ' km' : Math.round(distancia) + ' m') : '');
+        boton.appendChild(nombre);
+        boton.appendChild(resumen);
+        item.appendChild(boton);
+        lista.appendChild(item);
+    });
+}
+
+function limpiarCapaRutaPublica() {
+    if (publicRouteLine) {
+        map.removeLayer(publicRouteLine);
+        publicRouteLine = null;
+    }
+    if (publicRouteArrows) {
+        map.removeLayer(publicRouteArrows);
+        publicRouteArrows = null;
+    }
+}
+
+function coordenadasPublicas(ruta) {
+    var coordenadas = ruta && ruta.geometria && ruta.geometria.coordinates;
+    if (!Array.isArray(coordenadas) || coordenadas.length < 2) return [];
+    var puntos = [];
+    for (var i = 0; i < coordenadas.length; i++) {
+        var punto = coordenadas[i];
+        if (!Array.isArray(punto) || punto.length < 2 || !Number.isFinite(Number(punto[0])) || !Number.isFinite(Number(punto[1]))) {
+            return [];
+        }
+        puntos.push([Number(punto[1]), Number(punto[0])]);
+    }
+    return puntos;
+}
+
+function destinoRutaPublica(ruta) {
+    var destino = ruta && ruta.destino;
+    if (!destino) return null;
+    if (destino.tipo === 'nodo') {
+        var valores = String(destino.ref || '').split(',').map(Number);
+        return valores.length === 2 && valores.every(Number.isFinite) ? { lat: valores[0], lng: valores[1] } : null;
+    }
+    var capa = capasEdificios[destino.ref];
+    if (!capa || typeof capa.getBounds !== 'function') return null;
+    var centro = capa.getBounds().getCenter();
+    return { lat: centro.lat, lng: centro.lng };
+}
+
+function recortarRutaDesde(posicion, coordenadas) {
+    if (!posicion || coordenadas.length < 2) return coordenadas;
+    var mejor = { distancia: Infinity, indice: -1, punto: null };
+    for (var i = 0; i < coordenadas.length - 1; i++) {
+        var inicio = coordenadas[i];
+        var fin = coordenadas[i + 1];
+        var proyeccion = projectPointOnSegment(posicion.lat, posicion.lng, inicio[0], inicio[1], fin[0], fin[1]);
+        if (proyeccion.dist < mejor.distancia) {
+            mejor = {
+                distancia: proyeccion.dist,
+                indice: i,
+                punto: [
+                    inicio[0] + (fin[0] - inicio[0]) * proyeccion.t,
+                    inicio[1] + (fin[1] - inicio[1]) * proyeccion.t
+                ]
+            };
+        }
+    }
+    var configuracion = obtenerConfiguracionPublica();
+    if (mejor.indice < 0 || mejor.distancia > Number(configuracion.rutas.distancia_inicio_ruta_m || 7)) {
+        return coordenadas;
+    }
+    var recortada = [[posicion.lat, posicion.lng], mejor.punto];
+    for (var j = mejor.indice + 1; j < coordenadas.length; j++) {
+        recortada.push(coordenadas[j]);
+    }
+    return recortada;
+}
+
+function calcularRutaPublicaDinamica(ruta, posicion) {
+    if (!pathGraph || !posicion) return null;
+    var destino = destinoRutaPublica(ruta);
+    if (!destino) return null;
+    var inicioKey = findClosestNode(posicion.lat, posicion.lng, pathGraph);
+    var finKey = findClosestNode(destino.lat, destino.lng, pathGraph);
+    if (!inicioKey || !finKey) return null;
+    var nodos = dijkstra(pathGraph, inicioKey, finKey);
+    if (!Array.isArray(nodos) || nodos.length === 0) return null;
+    nodos.unshift({ lat: posicion.lat, lng: posicion.lng });
+    nodos.push(destino);
+    return nodos.map(function (punto) { return [punto.lat, punto.lng]; });
+}
+
+function agregarFlechasRuta(coordenadas) {
+    publicRouteArrows = L.layerGroup().addTo(map);
+    var ultimaDistancia = 0;
+    var siguienteFlecha = 45;
+    for (var i = 0; i < coordenadas.length - 1; i++) {
+        var inicio = coordenadas[i];
+        var fin = coordenadas[i + 1];
+        var tramo = distanciaMetros(inicio[0], inicio[1], fin[0], fin[1]);
+        while (ultimaDistancia + tramo >= siguienteFlecha) {
+            var proporcion = (siguienteFlecha - ultimaDistancia) / tramo;
+            var lat = inicio[0] + (fin[0] - inicio[0]) * proporcion;
+            var lng = inicio[1] + (fin[1] - inicio[1]) * proporcion;
+            var bearing = Math.atan2(fin[1] - inicio[1], fin[0] - inicio[0]) * 180 / Math.PI;
+            var marcador = L.marker([lat, lng], {
+                interactive: false,
+                keyboard: false,
+                icon: L.divIcon({ className: 'public-route-arrow', html: '<span>➤</span>', iconSize: [18, 18], iconAnchor: [9, 9] })
+            }).addTo(publicRouteArrows);
+            var elemento = marcador.getElement();
+            if (elemento && elemento.firstElementChild) {
+                elemento.firstElementChild.style.transform = 'rotate(' + (-bearing) + 'deg)';
+            }
+            siguienteFlecha += 45;
+        }
+        ultimaDistancia += tramo;
+    }
+}
+
+function dibujarRutaPublica(ruta, coordenadas, ajustarVista) {
+    limpiarCapaRutaPublica();
+    if (!Array.isArray(coordenadas) || coordenadas.length < 2) return false;
+    var estilo = obtenerConfiguracionPublica().estilos.ruta_publica;
+    publicRouteLine = L.polyline(coordenadas, {
+        color: estilo.color,
+        weight: estilo.grosor,
+        opacity: estilo.opacidad,
+        lineCap: 'round',
+        lineJoin: 'round',
+        className: 'animated-route-line'
+    }).addTo(map);
+    agregarFlechasRuta(coordenadas);
+    if (ajustarVista) map.fitBounds(publicRouteLine.getBounds(), { padding: [60, 60] });
+    var metrosRuta = calcularDistanciaRuta(coordenadas.map(function (punto) {
+        return { lat: punto[0], lng: punto[1] };
+    }));
+    var destino = ruta.destino && ruta.destino.nombre ? ruta.destino.nombre : 'Destino';
+    mostrarPanelNavegacion('Ruta: ' + ruta.nombre, destino, Math.round(metrosRuta));
+    map.closePopup();
+    actualizarEstadoLlegada(obtenerPosicionUsuario());
+    return true;
+}
+
+function actualizarRutaPublica(ruta, posicion, ajustarVista) {
+    var coordenadas = [];
+    if (ruta.dinamica && !ruta.geometria) {
+        coordenadas = calcularRutaPublicaDinamica(ruta, posicion) || [];
+    } else {
+        coordenadas = coordenadasPublicas(ruta);
+        coordenadas = recortarRutaDesde(posicion, coordenadas);
+    }
+    if (!dibujarRutaPublica(ruta, coordenadas, ajustarVista)) {
+        var estadoRutas = document.getElementById('public-routes-status');
+        if (estadoRutas) estadoRutas.textContent = ruta.dinamica
+            ? 'No se pudo calcular la ruta desde tu ubicación. Comprueba que la ubicación y la red estén disponibles.'
+            : 'No se pudo dibujar la geometría de esta ruta.';
+        return false;
+    }
+    return true;
+}
+
+function seleccionarRutaPublica(id) {
+    var ruta = publicRoutes.find(function (item) { return item.id === id; });
+    if (!ruta) return;
+    if (activeRouteLine) {
+        map.removeLayer(activeRouteLine);
+        activeRouteLine = null;
+    }
+    if (startPointMarker) {
+        map.removeLayer(startPointMarker);
+        startPointMarker = null;
+    }
+    if (endPointMarker) {
+        map.removeLayer(endPointMarker);
+        endPointMarker = null;
+    }
+    selectedDestinationId = null;
+    selectedDoorId = null;
+    var selectorPuertas = document.getElementById('doors-select');
+    if (selectorPuertas) selectorPuertas.value = '';
+    selectedPublicRoute = ruta;
+    document.querySelectorAll('.public-route-item').forEach(function (boton) {
+        boton.setAttribute('aria-pressed', boton.getAttribute('data-id') === id ? 'true' : 'false');
+    });
+    var posicion = obtenerPosicionUsuario();
+    var limpiarRuta = document.getElementById('public-routes-clear');
+    if (limpiarRuta) limpiarRuta.hidden = false;
+    actualizarRutaPublica(ruta, posicion, true);
+    abrirSelectorRutas(false);
+}
+
+function abrirSelectorRutas(abierto) {
+    var lista = document.getElementById('public-routes-list');
+    var boton = document.getElementById('public-routes-toggle');
+    if (!lista || !boton) return;
+    lista.hidden = !abierto;
+    boton.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+}
+
+function limpiarSeleccionRutaPublica() {
+    selectedPublicRoute = null;
+    limpiarCapaRutaPublica();
+    var borrar = document.getElementById('public-routes-clear');
+    if (borrar) borrar.hidden = true;
+    document.querySelectorAll('.public-route-item').forEach(function (boton) {
+        boton.setAttribute('aria-pressed', 'false');
+    });
+}
+
+function activarPanelMovible(panel, cabecera, resizeHandle) {
+    function limitarPanel(ancho, alto, izquierda, arriba) {
+        return {
+            left: Math.max(12, Math.min(izquierda, window.innerWidth - ancho - 12)),
+            top: Math.max(12, Math.min(arriba, window.innerHeight - alto - 12))
+        };
+    }
+
+    cabecera.addEventListener('pointerdown', function (evento) {
+        if (evento.target.closest('button, a, input, select')) return;
+        var rect = panel.getBoundingClientRect();
+        var inicioX = evento.clientX;
+        var inicioY = evento.clientY;
+        panel.style.left = rect.left + 'px';
+        panel.style.top = rect.top + 'px';
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+        panel.style.transform = 'none';
+        cabecera.setPointerCapture(evento.pointerId);
+        evento.stopPropagation();
+        evento.preventDefault();
+        function mover(movimiento) {
+            var limites = limitarPanel(rect.width, rect.height, rect.left + movimiento.clientX - inicioX, rect.top + movimiento.clientY - inicioY);
+            panel.style.left = limites.left + 'px';
+            panel.style.top = limites.top + 'px';
+        }
+        function terminar() {
+            cabecera.removeEventListener('pointermove', mover);
+            cabecera.removeEventListener('pointerup', terminar);
+            cabecera.removeEventListener('pointercancel', terminar);
+        }
+        cabecera.addEventListener('pointermove', mover);
+        cabecera.addEventListener('pointerup', terminar);
+        cabecera.addEventListener('pointercancel', terminar);
+    });
+
+    resizeHandle.addEventListener('pointerdown', function (evento) {
+        var rect = panel.getBoundingClientRect();
+        var inicioX = evento.clientX;
+        var inicioY = evento.clientY;
+        var anchoInicial = rect.width;
+        var altoInicial = rect.height;
+        panel.style.left = rect.left + 'px';
+        panel.style.top = rect.top + 'px';
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+        panel.style.transform = 'none';
+        resizeHandle.setPointerCapture(evento.pointerId);
+        evento.stopPropagation();
+        evento.preventDefault();
+        function redimensionar(movimiento) {
+            panel.style.width = Math.max(220, Math.min(anchoInicial + movimiento.clientX - inicioX, window.innerWidth - rect.left - 12)) + 'px';
+            panel.style.height = Math.max(120, Math.min(altoInicial + movimiento.clientY - inicioY, window.innerHeight - rect.top - 12)) + 'px';
+        }
+        function terminar() {
+            resizeHandle.removeEventListener('pointermove', redimensionar);
+            resizeHandle.removeEventListener('pointerup', terminar);
+            resizeHandle.removeEventListener('pointercancel', terminar);
+        }
+        resizeHandle.addEventListener('pointermove', redimensionar);
+        resizeHandle.addEventListener('pointerup', terminar);
+        resizeHandle.addEventListener('pointercancel', terminar);
+    });
+}
+
 function crearFilaNavegacion(etiqueta, valor, claseValor) {
     var fila = document.createElement('div');
     fila.className = 'nav-info-item';
@@ -828,6 +1217,12 @@ function mostrarPanelNavegacion(origen, destino, distancia) {
     panel.appendChild(cabecera);
     panel.appendChild(detalles);
     panel.appendChild(boton);
+    var resizeHandle = document.createElement('div');
+    resizeHandle.className = 'nav-panel-resize';
+    resizeHandle.setAttribute('role', 'separator');
+    resizeHandle.setAttribute('aria-label', 'Cambiar tamaño del panel');
+    panel.appendChild(resizeHandle);
+    activarPanelMovible(panel, cabecera, resizeHandle);
 
     // Añadir estilo activo
     setTimeout(() => {
@@ -848,6 +1243,7 @@ window.limpiarRuta = function () {
         map.removeLayer(endPointMarker);
         endPointMarker = null;
     }
+    limpiarSeleccionRutaPublica();
 
     // Limpiar selecciones de puertas
     var selectEl = document.getElementById('doors-select');
@@ -906,7 +1302,9 @@ function sincronizarNombresAccesos() {
     });
 }
 
+// puntos de origen (accesos)
 window.seleccionarPuerta = function (doorId) {
+    limpiarSeleccionRutaPublica();
     let selectEl = document.getElementById('doors-select');
     if (selectEl) {
         selectEl.value = doorId;
@@ -1006,6 +1404,17 @@ centerBtn.addEventListener('click', function () {
     centerOnLocation();
 });
 
+document.getElementById('public-routes-toggle').addEventListener('click', function () {
+    abrirSelectorRutas(this.getAttribute('aria-expanded') !== 'true');
+});
+document.getElementById('public-routes-close').addEventListener('click', function () {
+    abrirSelectorRutas(false);
+});
+document.getElementById('public-routes-clear').addEventListener('click', function () {
+    window.limpiarRuta();
+});
+
+// buscar coincidencias en los nombres de edificios y aulas, ignorando mayúsculas/minúsculas
 function buscarEdificiosYAulas(query) {
     var resultados = [];
     var texto = String(query === null || query === undefined ? '' : query).toLowerCase();
@@ -1132,6 +1541,7 @@ function resaltarTexto(texto, query) {
     return fragmento;
 }
 
+//identificar el edificio seleccionado por el usuario
 function seleccionarSugerencia(edificioId, aula) {
     suggestionsContainer.classList.remove('active');
 
@@ -1211,3 +1621,4 @@ function initSuggestionLink() {
 }
 
 initSuggestionLink();
+cargarCatalogoRutasPublicas();
