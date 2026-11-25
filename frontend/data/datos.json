@@ -591,5 +591,15 @@
         ],
         "tipo": "edificio",
         "imagenes": []
+    },
+    "1V": {
+        "nombre": "Velaria",
+        "descripcion": "Velaria",
+        "aulas": [],
+        "carpeta": [
+            "1V"
+        ],
+        "tipo": "edificio",
+        "imagenes": []
     }
 }

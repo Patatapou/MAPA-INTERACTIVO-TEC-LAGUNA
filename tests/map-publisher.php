@@ -219,6 +219,23 @@ try {
         'la confirmación publica el catálogo estático generado en main'
     );
 
+    $archivoIndice = $repo . DIRECTORY_SEPARATOR . '.git' . DIRECTORY_SEPARATOR . 'index';
+    gitPublisher(['update-index', '--index-version=2'], $repo);
+    file_put_contents($repo . DIRECTORY_SEPARATOR . 'frontend' . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'index-rewrite.json', '{}');
+    $previewIndice = $publisher->vistaPrevia();
+    $hashIndiceAntes = hash_file('sha256', $archivoIndice);
+    gitPublisher(['update-index', '--index-version=4'], $repo);
+    $hashIndiceDespues = hash_file('sha256', $archivoIndice);
+    comprobarPublisher(
+        $hashIndiceAntes !== $hashIndiceDespues,
+        'la prueba reescribe el formato interno del índice sin cambiar los archivos del mapa'
+    );
+    $publicacionIndice = $publisher->publicar($previewIndice['snapshot']);
+    comprobarPublisher(
+        $publicacionIndice['published'],
+        'una reescritura interna del índice no invalida una vista previa sin cambios del mapa'
+    );
+
     $treeRemoto = gitPublisher(['write-tree'], $repo);
     $headLocal = gitPublisher(['rev-parse', 'HEAD'], $repo);
     $commitRemoto = gitPublisher(['commit-tree', $treeRemoto, '-p', $headLocal, '-m', 'avance remoto'], $repo);

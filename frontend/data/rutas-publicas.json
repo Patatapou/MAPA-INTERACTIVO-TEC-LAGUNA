@@ -246,6 +246,21 @@
                     ]
                 ]
             }
+        },
+        {
+            "id": "ruta-50498973",
+            "nombre": "Mercatec",
+            "descripcion": "",
+            "tipo": "institucional",
+            "destino": {
+                "tipo": "edificio",
+                "ref": "1V",
+                "nombre": "Velaria"
+            },
+            "distancia_m": null,
+            "origen_usuario": true,
+            "dinamica": true,
+            "geometria": null
         }
     ]
 }

@@ -189,13 +189,7 @@ final class MapPublisher
         );
         $archivos = $this->interpretarEstado($estadoGit);
 
-        $indice = trim($this->ejecutarGit(['rev-parse', '--git-path', 'index'], 'No se pudo verificar el índice de Git.'));
-        if (!$this->rutaDentroDelRepo($indice)) {
-            $indice = $this->root . DIRECTORY_SEPARATOR . $indice;
-        }
-        $hashIndice = is_file($indice) ? hash_file('sha256', $indice) : '';
-
-        $partesSnapshot = [$local, $remotoMain, $estadoGit, (string) $hashIndice];
+        $partesSnapshot = [$local, $remotoMain, $estadoGit];
         foreach ($archivos as $archivo) {
             $absoluta = $this->rutaArchivo($archivo);
             $contenido = is_file($absoluta) ? hash_file('sha256', $absoluta) : 'deleted';
