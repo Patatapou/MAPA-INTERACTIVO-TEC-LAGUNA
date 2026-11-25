@@ -204,7 +204,7 @@ if (isset($_GET['editar']) && isset($datos[$_GET['editar']])) {
         <pre id="publish-map-details" class="publish-map-details" hidden></pre>
         <p id="publish-map-status" class="publish-map-status" aria-live="polite"></p>
         <div class="publish-dialog-actions">
-            <button type="button" class="btn btn-secondary" id="publish-map-cancel">Cerrar</button>
+            <button type="button" class="btn btn-secondary" id="publish-map-cancel">Cancelar</button>
             <button type="button" class="btn btn-primary" id="publish-map-confirm" disabled>
                 Confirmar y publicar
             </button>
@@ -611,6 +611,7 @@ if (publishButton && publishDialog) {
         publishSummary.textContent = 'Revisando el repositorio y los cambios...';
         publishButton.disabled = true;
         publishButton.textContent = 'Revisando...';
+        publishCancel.hidden = false;
         mostrarDialogoPublicacion();
 
         try {
@@ -682,6 +683,7 @@ if (publishButton && publishDialog) {
             publishInProgress = false;
             publishFinished = true;
             publishCancel.disabled = false;
+            publishCancel.hidden = true;
             publishConfirm.textContent = 'Cerrar';
             publishConfirm.disabled = false;
         }

@@ -17,20 +17,20 @@ final class RouteSettingsService
         return [
             'modo_ubicacion' => 'real',
             'rutas' => [
-                'tolerancia_continuidad_m' => 1.5,
-                'distancia_inicio_ruta_m' => 7.0,
+                'tolerancia_continuidad_m' => 2.5,
+                'distancia_inicio_ruta_m' => 80.0,
                 'max_segmentos_por_ruta' => 500,
-                'max_salto_enlace_m' => 80.0,
+                'max_salto_enlace_m' => 20.0,
             ],
             'estilos' => [
                 'ruta_publica' => ['color' => '#1565c0', 'grosor' => 6, 'opacidad' => 0.85],
-                'ruta_admin' => ['color' => '#1161ee', 'grosor' => 6, 'opacidad' => 1.0],
-                'caminos' => ['color' => '#12306b', 'grosor' => 4, 'opacidad' => 0.85],
-                'caminos_publicos' => ['color' => '#12306b', 'grosor' => 4, 'opacidad' => 0.0],
-                'segmentos' => ['color' => '#0b57d0', 'grosor' => 6, 'opacidad' => 1.0],
+                'ruta_admin' => ['color' => '#1565c0', 'grosor' => 6, 'opacidad' => 1.0],
+                'caminos' => ['color' => '#1565c0', 'grosor' => 4, 'opacidad' => 0.85],
+                'caminos_publicos' => ['color' => '#1565c0', 'grosor' => 4, 'opacidad' => 0.0],
+                'segmentos' => ['color' => '#1565c0', 'grosor' => 6, 'opacidad' => 1.0],
                 'edificios_publicos' => [
-                    'contorno' => ['color' => '#2F29D1', 'grosor' => 0, 'opacidad' => 1.0],
-                    'relleno' => ['color' => '#3388FF', 'opacidad' => 0.0],
+                    'contorno' => ['color' => '#2f29d1', 'grosor' => 0, 'opacidad' => 1.0],
+                    'relleno' => ['color' => '#3388ff', 'opacidad' => 0.0],
                 ],
                 'edificios_admin' => [
                     'contorno' => ['color' => '#000000', 'grosor' => 1, 'opacidad' => 1.0],
