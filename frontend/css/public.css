@@ -98,7 +98,7 @@ html, body, #map {
 /* BARRA DE BÚSQUEDA */
 .searchbar-container {
     position: fixed;
-    bottom: 20px;
+    bottom: 60px !important;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
