@@ -232,6 +232,9 @@ function renderizarEdificios() {
             }
 
             layer.on('click', function () {
+                if (propiedades.id) {
+                    destacarEdificio(propiedades.id);
+                }
                 mostrarPopupEdificio(propiedades.id, layer);
             });
         }

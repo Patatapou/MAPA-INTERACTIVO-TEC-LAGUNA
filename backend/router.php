@@ -38,6 +38,7 @@ $pagina = (string) $_GET['p'];
 $rutas = [
     // Públicas
     'login'           => ['archivo' => BACKEND_PATH . '/admin/login.php', 'auth' => false],
+    'admin-server-lifecycle' => ['archivo' => BACKEND_PATH . '/api/admin-server-lifecycle.php', 'auth' => false],
 
     // Panel y vistas protegidas
     'editar'            => ['archivo' => BACKEND_PATH . '/admin/panel.php', 'auth' => true],
@@ -79,6 +80,30 @@ if ($ruta === null) {
 
 if ($ruta['auth']) {
     requerirAdmin();
+}
+
+if (in_array($pagina, [
+    'login',
+    'editar',
+    'editar-geometria',
+    'rutas',
+    'editar-red',
+    'usuarios',
+    'cambiar-contrasena',
+], true)) {
+    ob_start();
+    require $ruta['archivo'];
+    $contenido = ob_get_clean();
+
+    $cierreBody = stripos($contenido, '</body>');
+    if ($cierreBody !== false) {
+        $token = htmlspecialchars(generarTokenCSRF(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $script = '<script src="js/admin/admin-server-lifecycle.js" data-csrf-token="' . $token . '" defer></script>' . PHP_EOL;
+        $contenido = substr($contenido, 0, $cierreBody) . $script . substr($contenido, $cierreBody);
+    }
+
+    echo $contenido;
+    exit;
 }
 
 require $ruta['archivo'];

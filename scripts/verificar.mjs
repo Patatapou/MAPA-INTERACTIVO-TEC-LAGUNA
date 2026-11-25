@@ -136,6 +136,7 @@ registrar(`php -l (${archivosPhp.length} archivos)`, erroresSintaxis.length === 
 const pruebasPhp = [
     'tests/rutas-repository.php',
     'tests/rutas-service.php',
+    'tests/admin-server-lifecycle.php',
     'tests/map-public-exporter.php',
     'tests/red/integridad-red.php',
     'tests/red/validacion-red.php',
