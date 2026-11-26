@@ -196,6 +196,7 @@
         modo_ubicacion: 'Modo de ubicación',
         tolerancia_continuidad_m: 'Tolerancia de continuidad (m)',
         distancia_inicio_ruta_m: 'Distancia para iniciar sobre ruta (m)',
+        precision_gps_maxima_m: 'Precisión GPS máxima aceptada (m)',
         max_segmentos_por_ruta: 'Máximo de segmentos por ruta',
         max_salto_enlace_m: 'Salto máximo para enlazar (m)',
         ruta_publica: 'Ruta pública',
@@ -234,13 +235,21 @@
             if (nombre === 'color') {
                 entrada.value = /^#[0-9a-f]{6}$/i.test(valor) ? valor : '#000000';
             } else {
-                entrada.step = nombre === 'max_segmentos_por_ruta' ? '1' : (nombre === 'opacidad' ? '0.05' : '0.1');
-                entrada.min = nombre === 'max_segmentos_por_ruta' ? '1'
-                    : (nombre === 'max_salto_enlace_m' || nombre === 'grosor' || nombre === 'opacidad' ? '0' : '0.1');
-                entrada.max = nombre === 'max_segmentos_por_ruta' ? '5000'
-                    : (nombre === 'grosor' ? '20' : (nombre === 'opacidad' ? '1'
+                if (nombre === 'max_segmentos_por_ruta') {
+                    entrada.step = '1';
+                    entrada.min = '1';
+                    entrada.max = '5000';
+                } else if (nombre === 'precision_gps_maxima_m') {
+                    entrada.step = '0.1';
+                    entrada.min = '0.1';
+                    entrada.max = '500';
+                } else {
+                    entrada.step = nombre === 'opacidad' ? '0.05' : '0.1';
+                    entrada.min = nombre === 'max_salto_enlace_m' || nombre === 'grosor' || nombre === 'opacidad' ? '0' : '0.1';
+                    entrada.max = nombre === 'grosor' ? '20' : (nombre === 'opacidad' ? '1'
                         : (nombre === 'max_salto_enlace_m' ? '1000'
-                            : (nombre === 'distancia_inicio_ruta_m' ? '100' : '25'))));
+                            : (nombre === 'distancia_inicio_ruta_m' ? '100' : '25')));
+                }
                 entrada.value = String(valor);
             }
         }
@@ -269,11 +278,12 @@
         limpiar(dom.camposAjustes);
         anadirCampoAjuste(dom.camposAjustes, 'modo_ubicacion', settings.modo_ubicacion);
         anadirGrupoAjuste(dom.camposAjustes, 'Rutas', settings.rutas, 'rutas');
+        anadirGrupoAjuste(dom.camposAjustes, 'Ubicación GPS', settings.ubicacion, 'ubicacion');
         anadirGrupoAjuste(dom.camposAjustes, 'Estilos', settings.estilos, 'estilos');
     }
 
     function leerCamposAjustes() {
-        var resultado = { modo_ubicacion: '', rutas: {}, estilos: {} };
+        var resultado = { modo_ubicacion: '', rutas: {}, ubicacion: {}, estilos: {} };
         var entradas = dom.camposAjustes.querySelectorAll('[data-setting-path]');
         for (var i = 0; i < entradas.length; i++) {
             var entrada = entradas[i];

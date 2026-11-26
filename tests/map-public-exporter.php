@@ -32,6 +32,7 @@ try {
 
     $defaults = $settings->valoresPorDefecto();
     $saved = $settings->guardar($defaults);
+    afirmarIgual('La precisión GPS máxima conserva el umbral anterior', 60.0, $saved['ubicacion']['precision_gps_maxima_m']);
     $configJs = (string) file_get_contents($publicData . DIRECTORY_SEPARATOR . 'location-config.js');
     afirmar('Se exporta configuración visual pública', strpos($configJs, 'window.CONFIG_MAPA =') !== false);
     afirmar('La configuración pública no contiene datos administrativos', strpos($configJs, 'audit') === false);
@@ -39,7 +40,17 @@ try {
     $configPublica = isset($configCoincidencia[1]) ? json_decode($configCoincidencia[1], true) : null;
     afirmarIgual('La red de caminos pública queda independiente y oculta por defecto', 0, $configPublica['estilos']['caminos_publicos']['opacidad'] ?? null);
     afirmarIgual('La red administrativa conserva su estilo visible', 0.85, $configPublica['estilos']['caminos']['opacidad'] ?? null);
+    afirmarIgual('Se exporta el umbral de precisión GPS', 60, $configPublica['ubicacion']['precision_gps_maxima_m'] ?? null);
     afirmarIgual('Se persiste el modo elegido', 'real', $saved['modo_ubicacion']);
+
+    $precisionPersonalizada = $defaults;
+    $precisionPersonalizada['ubicacion']['precision_gps_maxima_m'] = 125;
+    $guardadaPersonalizada = $settings->guardar($precisionPersonalizada);
+    afirmarIgual('Se permite personalizar el umbral de precisión GPS', 125.0, $guardadaPersonalizada['ubicacion']['precision_gps_maxima_m']);
+    $configJsPersonalizada = (string) file_get_contents($publicData . DIRECTORY_SEPARATOR . 'location-config.js');
+    preg_match('/window\.CONFIG_MAPA = (\{.*\});/', $configJsPersonalizada, $configPersonalizadaMatch);
+    $configPersonalizada = isset($configPersonalizadaMatch[1]) ? json_decode($configPersonalizadaMatch[1], true) : null;
+    afirmarIgual('Se exporta el umbral GPS personalizado para el mapa público', 125, $configPersonalizada['ubicacion']['precision_gps_maxima_m'] ?? null);
 
     $invalid = $defaults;
     $invalid['rutas']['distancia_inicio_ruta_m'] = 1000;
@@ -50,6 +61,16 @@ try {
         $rechazada = true;
     }
     afirmar('Se rechazan tolerancias fuera de rango', $rechazada);
+
+    $precisionInvalida = $defaults;
+    $precisionInvalida['ubicacion']['precision_gps_maxima_m'] = 501;
+    $rechazoPrecision = false;
+    try {
+        $settings->guardar($precisionInvalida);
+    } catch (InvalidArgumentException $e) {
+        $rechazoPrecision = true;
+    }
+    afirmar('Se rechaza un umbral de precisión GPS fuera del rango permitido', $rechazoPrecision);
 
     $rutaActiva = [
         'id' => 'ruta-1234abcd',

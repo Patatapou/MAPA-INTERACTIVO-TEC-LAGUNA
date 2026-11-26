@@ -22,6 +22,9 @@ final class RouteSettingsService
                 'max_segmentos_por_ruta' => 500,
                 'max_salto_enlace_m' => 20.0,
             ],
+            'ubicacion' => [
+                'precision_gps_maxima_m' => 60.0,
+            ],
             'estilos' => [
                 'ruta_publica' => ['color' => '#1565c0', 'grosor' => 6, 'opacidad' => 0.85],
                 'ruta_admin' => ['color' => '#1565c0', 'grosor' => 6, 'opacidad' => 1.0],
@@ -54,6 +57,9 @@ final class RouteSettingsService
             }
             if (is_array($datos['rutas'] ?? null)) {
                 $configuracion['rutas'] = array_replace($configuracion['rutas'], $datos['rutas']);
+            }
+            if (is_array($datos['ubicacion'] ?? null)) {
+                $configuracion['ubicacion'] = array_replace($configuracion['ubicacion'], $datos['ubicacion']);
             }
             if (is_array($datos['mapa'] ?? null)) {
                 if (in_array($datos['mapa']['modo_ubicacion'] ?? null, ['real', 'simulada'], true)) {
@@ -102,6 +108,10 @@ final class RouteSettingsService
                 $datos = $existente;
             }
             $datos['rutas'] = array_merge(is_array($datos['rutas'] ?? null) ? $datos['rutas'] : [], $nueva['rutas']);
+            $datos['ubicacion'] = array_merge(
+                is_array($datos['ubicacion'] ?? null) ? $datos['ubicacion'] : [],
+                $nueva['ubicacion']
+            );
             $mapaExistente = is_array($datos['mapa'] ?? null) ? $datos['mapa'] : [];
             $datos['mapa'] = array_merge($mapaExistente, [
                 'modo_ubicacion' => $nueva['modo_ubicacion'],
@@ -128,6 +138,7 @@ final class RouteSettingsService
         $publica = [
             'schema_version' => 1,
             'rutas' => $configuracion['rutas'],
+            'ubicacion' => $configuracion['ubicacion'],
             'estilos' => $configuracion['estilos'],
         ];
         $json = json_encode(
@@ -172,6 +183,17 @@ final class RouteSettingsService
             $rutas[$clave] = $clave === 'max_segmentos_por_ruta' ? (int) $valor : (float) $valor;
         }
 
+        $ubicacionEntrada = is_array($entrada['ubicacion'] ?? null) ? $entrada['ubicacion'] : [];
+        $ubicacion = [
+            'precision_gps_maxima_m' => $this->validarNumero(
+                $ubicacionEntrada['precision_gps_maxima_m'] ?? null,
+                0.1,
+                500.0,
+                'ubicacion.precision_gps_maxima_m',
+                $errores
+            ),
+        ];
+
         $estilosEntrada = is_array($entrada['estilos'] ?? null) ? $entrada['estilos'] : [];
         $estilos = [];
         foreach ($porDefecto['estilos'] as $grupo => $estiloDefecto) {
@@ -190,7 +212,12 @@ final class RouteSettingsService
             throw new InvalidArgumentException(implode(' ', $errores));
         }
 
-        return ['modo_ubicacion' => $modo, 'rutas' => $rutas, 'estilos' => $estilos];
+        return [
+            'modo_ubicacion' => $modo,
+            'rutas' => $rutas,
+            'ubicacion' => $ubicacion,
+            'estilos' => $estilos,
+        ];
     }
 
     private function validarTrazo(array $entrada, array $defecto, string $campo, array &$errores): array

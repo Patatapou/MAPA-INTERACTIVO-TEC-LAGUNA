@@ -183,6 +183,9 @@ try {
         comprobar('location-config.js contiene configuración visual saneada',
             contexto.window.CONFIG_MAPA && contexto.window.CONFIG_MAPA.schema_version === 1
             && contexto.window.CONFIG_MAPA.estilos && contexto.window.CONFIG_MAPA.rutas);
+        comprobar('location-config.js publica el umbral de precisión GPS',
+            Number.isFinite(contexto.window.CONFIG_MAPA.ubicacion?.precision_gps_maxima_m)
+            && contexto.window.CONFIG_MAPA.ubicacion.precision_gps_maxima_m > 0);
     }
 } catch (error) {
     comprobar('location-config.js define un modo válido', false, error.message);

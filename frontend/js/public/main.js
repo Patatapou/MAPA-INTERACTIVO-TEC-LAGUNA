@@ -30,7 +30,6 @@ var userMarker = null;           // Para GPS real
 var accuracyCircle = null;       // Para GPS real
 var watchId = null;              // ID de geolocalización real
 var positionBuffer = [];
-const MIN_ACCURACY = 60;
 const MAX_BUFFER = 5;
 
 // Variables de Simulación
@@ -51,6 +50,7 @@ const RADIO_LLEGADA_METROS = 10;
 
 var CONFIGURACION_PUBLICA_DEFECTO = {
     rutas: { distancia_inicio_ruta_m: 7 },
+    ubicacion: { precision_gps_maxima_m: 60 },
     estilos: {
         ruta_publica: { color: '#1565c0', grosor: 6, opacidad: 0.85 },
         caminos: { color: '#12306b', grosor: 4, opacidad: 0.85 },
@@ -135,6 +135,7 @@ function obtenerConfiguracionPublica() {
     }
     return {
         rutas: Object.assign({}, CONFIGURACION_PUBLICA_DEFECTO.rutas, config.rutas || {}),
+        ubicacion: Object.assign({}, CONFIGURACION_PUBLICA_DEFECTO.ubicacion, config.ubicacion || {}),
         estilos: estilos
     };
 }
@@ -372,8 +373,9 @@ function startGeolocation() {
             var lat = position.coords.latitude;
             var lng = position.coords.longitude;
             var accuracy = position.coords.accuracy;
+            var precisionMaxima = Number(obtenerConfiguracionPublica().ubicacion.precision_gps_maxima_m);
 
-            if (accuracy > MIN_ACCURACY) {
+            if (!Number.isFinite(precisionMaxima) || accuracy > precisionMaxima) {
                 console.warn(`Precisión baja (${accuracy}m), ignorando...`);
                 return;
             }
