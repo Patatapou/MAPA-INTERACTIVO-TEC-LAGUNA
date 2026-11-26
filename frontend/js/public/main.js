@@ -1521,7 +1521,7 @@ function seleccionarSugerencia(edificioId, aula) {
     searchInput.value = aula || nombre;
 
     destacarEdificio(edificioId);
-
+    
     if (capasEdificios[edificioId]) {
         var bounds = capasEdificios[edificioId].getBounds();
         map.fitBounds(bounds, {
